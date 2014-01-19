@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship, Session, mapper, \
             immediateload, backref
 from .fixtures import cust_order_item, cust_order_data
 from decimal import Decimal
-from sqlalchemy_akiban import orm
+from sqlalchemy_foundationdb import orm
 
 class _Fixture(object):
     @classmethod
@@ -76,7 +76,7 @@ class _Fixture(object):
         return c1
 
 class RenderTest(_Fixture, fixtures.MappedTest, AssertsCompiledSQL):
-    __dialect__ = 'akiban'
+    __dialect__ = 'foundationdb'
 
     def test_option_creation(self):
         from sqlalchemy.orm.strategies import EagerLazyOption
@@ -220,7 +220,7 @@ class LoadTest(_Fixture, fixtures.MappedTest, AssertsExecutionResults):
             )
 
 class MappedWNestTest(_Fixture, fixtures.MappedTest, AssertsExecutionResults):
-    lazy = 'akiban_nested'
+    lazy = 'nested'
     run_inserts = 'once'
     run_deletes = None
 
@@ -265,8 +265,8 @@ class RecursionOverflowTest(_Fixture, fixtures.MappedTest, AssertsExecutionResul
         mapper(Customer, customer, properties={
             'orders': relationship(Order,
                         backref=backref("customer",
-                                lazy='akiban_nested', join_depth=join_depth),
-                    lazy='akiban_nested', join_depth=join_depth)
+                                lazy='nested', join_depth=join_depth),
+                    lazy='nested', join_depth=join_depth)
         })
         mapper(Order, order)
         return Customer, Order

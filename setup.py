@@ -3,16 +3,16 @@ import re
 
 from setuptools import setup
 
-v = open(os.path.join(os.path.dirname(__file__), 'sqlalchemy_akiban', '__init__.py'))
+v = open(os.path.join(os.path.dirname(__file__), 'sqlalchemy_sqlalchemy_foundationdb', '__init__.py'))
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
 readme = os.path.join(os.path.dirname(__file__), 'README.rst')
 
 
-setup(name='sqlalchemy_akiban',
+setup(name='sqlalchemy-foundationdb',
       version=VERSION,
-      description="Akiban Dialect and ORM Extension for SQLAlchemy",
+      description="FoundationDB SQL Layer Dialect and ORM Extension for SQLAlchemy",
       long_description=open(readme).read(),
       classifiers=[
       'Development Status :: 3 - Alpha',
@@ -24,20 +24,20 @@ setup(name='sqlalchemy_akiban',
       'Programming Language :: Python :: Implementation :: PyPy',
       'Topic :: Database :: Front-Ends',
       ],
-      keywords='Akiban SQLAlchemy',
+      keywords='FoundationDB SQLAlchemy',
       author='Mike Bayer',
       author_email='mike@zzzcomputing.com',
       license='MIT',
-      packages=['sqlalchemy_akiban'],
-      install_requires=['akiban >= 0.9'],
+      packages=['sqlalchemy_sqlalchemy_foundationdb'],
+      install_requires=['fdb_sql >= 0.9'],
       include_package_data=True,
       tests_require=['nose >= 0.11'],
-      test_suite="nose.collector",
+      test_suite="run_tests",
       zip_safe=False,
       entry_points={
          'sqlalchemy.dialects': [
-              'akiban = sqlalchemy_akiban.dialect.psycopg2:AkibanPsycopg2Dialect',
-              'akiban.psycopg2 = sqlalchemy_akiban.dialect.psycopg2:AkibanPsycopg2Dialect',
+              'sqlalchemy_foundationdb = sqlalchemy_sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
+              'sqlalchemy_foundationdb.psycopg2 = sqlalchemy_sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
               ]
         }
 )

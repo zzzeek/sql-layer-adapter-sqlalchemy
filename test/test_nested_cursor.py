@@ -3,7 +3,7 @@ from sqlalchemy.testing.assertions import eq_, is_
 from .fixtures import cust_order_item, cust_order_data
 from sqlalchemy import select, type_coerce
 from decimal import Decimal
-from sqlalchemy_akiban import nested
+from sqlalchemy_foundationdb import nested
 from sqlalchemy.types import TypeDecorator, Integer
 
 class _Fixture(object):
@@ -26,7 +26,7 @@ class _Fixture(object):
 
 
 class NestedTest(_Fixture, fixtures.TablesTest):
-    __dialect__ = 'akiban'
+    __dialect__ = 'sqlalchemy_foundationdb'
 
     def test_nested_row(self):
         customer = self.tables.customer

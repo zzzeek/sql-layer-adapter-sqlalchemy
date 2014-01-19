@@ -5,5 +5,5 @@ build
 tmp
 dist
 .venv
-akiban.egg-info/
+*.egg-info/
 .coverage

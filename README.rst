@@ -1,23 +1,23 @@
-=================
-SQLAlchemy-Akiban
-=================
+========================
+SQLAlchemy-FoundationDB
+========================
 
-SQLAlchemy-Akiban provides a SQLAlchemy dialect for Akiban, as well as
-a Core/ORM extension library allowing direct control of Akiban nested
+SQLAlchemy-FoundationDB provides a SQLAlchemy dialect for the FoundationDB
+SQL Layer, as well as
+a Core/ORM extension library allowing direct control of FoundationDB SQL nested
 SELECT statements and result sets.
 
 Requirements
 ============
 
-SQLAlchemy-Akiban depends on:
+SQLAlchemy-FoundationDB depends on:
 
-* `Akiban for Python <https://github.com/zzzeek/akiban_python>`_ - this
+* `fdb-sql <https://github.com/FoundationDB/sql-layer-adapter-dbapi>`_ - this
   is an extension for the psycopg2 DBAPI, in order to provide nested result support.
 
-* SQLAlchemy 0.8 - The dialect has been developed against SQLAlchemy 0.8, which
-  has one small API change to support nested result sets.   Less critically
-  it also supports generation of a WHERE clause using an ORM relationship
-  attribute (see the example in ORM->Explicit Nesting).
+* SQLAlchemy 0.9.2 - The FoundationDB dialect relies on various API
+  features that have been added throughout 0.8 and 0.9, and in particular
+  requires 0.9.2 for proper support of a "grouped" foreign key.
 
 Connecting
 ==========
@@ -26,7 +26,7 @@ Connect format is similar to that of a regular Postgresql database::
 
     from sqlalchemy import create_engine
 
-    engine = create_engine("akiban+psycopg2://@localhost:15432/")
+    engine = create_engine("sqlalchemy_foundationdb+psycopg2://@localhost:15432/")
 
 The ``Engine`` above will produce connections when the ``Engine.connect``
 method is called.
@@ -53,7 +53,7 @@ which is a new SQLAlchemy ``ResultProxy`` representing a nested result::
 DDL Integration
 ===============
 
-Currently, Akiban requires the GROUPING keyword on all foreign keys.   The dialect
+Currently, FoundationDB requires the GROUPING keyword on all foreign keys.   The dialect
 adds this keyword when emitting DDL for foreign keys::
 
     from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey
@@ -96,11 +96,11 @@ Nested Select Constructs
 Moving up a level, the dialect introduces a new Core construct ``nested``
 which is an extension of SQLAlchemy's "scalar select" construct.   This construct is
 a drop-in replacement for a standard ``select()`` subquery, and is a marker
-intercepted by the Akiban dialect indicating that column and typing information about
+intercepted by the FoundationDB dialect indicating that column and typing information about
 a "nested result" should be carried over from statement to result set::
 
     from sqlalchemy import select
-    from sqlalchemy_akiban import nested
+    from sqlalchemy_sqlalchemy_foundationdb import nested
 
     sub_stmt = nested([order]).where(order.c.customer_id
                                             == customer.c.id).label('o')
@@ -130,7 +130,7 @@ columns::
 ORM Integration
 ===============
 
-SQLAlchemy-Akiban includes ORM extensions, importable from the ``sqlalchemy_akiban.orm`` package.
+SQLAlchemy-FoundationDB includes ORM extensions, importable from the ``sqlalchemy_sqlalchemy_foundationdb.orm`` package.
 
 Nested Eager Loading
 --------------------
@@ -141,7 +141,7 @@ making usage of an embedded nested result.  These are used just like SQLAlchemy'
 
     from sqlalchemy.orm import relationship, Session
     from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy_akiban import orm
+    from sqlalchemy_sqlalchemy_foundationdb import orm
 
     Base = declarative_base()
 

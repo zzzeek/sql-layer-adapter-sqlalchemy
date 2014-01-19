@@ -28,6 +28,10 @@ def cust_order_data(cls):
     order = cls.tables.order
     item = cls.tables.item
 
+    config.db.execute(item.delete())
+    config.db.execute(order.delete())
+    config.db.execute(customer.delete())
+
     config.db.execute(
         customer.insert(),
         [
@@ -46,6 +50,7 @@ def cust_order_data(cls):
         ]
 
     )
+
     config.db.execute(
         order.insert(),
         [

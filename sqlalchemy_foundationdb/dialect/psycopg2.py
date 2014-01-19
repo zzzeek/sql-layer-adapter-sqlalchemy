@@ -1,35 +1,35 @@
-"""Implement the Akiban dialect via an extended version of the psycopg2
+"""Implement the FoundationDB dialect via an extended version of the psycopg2
 driver.
 
 """
 from __future__ import absolute_import
 
-from .base import AkibanDialect, AkibanExecutionContext
+from .base import FDBDialect, FDBExecutionContext
 
-Connection = None
+from fdb_sql import psycopg2 as fdb_psycopg2
 
-class AkibanPsycopg2ExecutionContext(AkibanExecutionContext):
+
+class FDBPsycopg2ExecutionContext(FDBExecutionContext):
     def create_cursor(self):
         return self._dbapi_connection.cursor(nested=not self.is_crud)
 
-    def set_ddl_autocommit(self, connection, value):
-        # this is psycopg2.autocommit:
-        # http://initd.org/psycopg/docs/connection.html#connection.autocommit
-        connection.commit()
-        connection.autocommit = value
+    #def set_ddl_autocommit(self, connection, value):
+    #    # this is psycopg2.autocommit:
+    #    # http://initd.org/psycopg/docs/connection.html#connection.autocommit
+    #    connection.commit()
+    #    connection.autocommit = value
 
-class AkibanPsycopg2Dialect(AkibanDialect):
+class FDBPsycopg2Dialect(FDBDialect):
     use_native_unicode = True
-    execution_ctx_cls = AkibanPsycopg2ExecutionContext
+    execution_ctx_cls = FDBPsycopg2ExecutionContext
     driver = 'psycopg2'
 
     supports_native_decimal = True
 
     @classmethod
     def dbapi(cls):
-        global Connection
-        from akiban.psycopg2 import Connection
-        return __import__("psycopg2")
+        import psycopg2
+        return psycopg2
 
     def on_connect(self):
         fns = []
@@ -54,5 +54,5 @@ class AkibanPsycopg2Dialect(AkibanDialect):
         if 'port' in opts:
             opts['port'] = int(opts['port'])
         opts.update(url.query)
-        opts['connection_factory'] = Connection
+        opts['connection_factory'] = fdb_psycopg2.Connection
         return ([], opts)

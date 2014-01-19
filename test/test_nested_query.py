@@ -6,8 +6,8 @@ from sqlalchemy.orm import relationship, Session, mapper, \
 from sqlalchemy.sql import select
 from .fixtures import cust_order_item, cust_order_data
 from decimal import Decimal
-from sqlalchemy_akiban import nested
-from sqlalchemy_akiban.orm import orm_nested
+from sqlalchemy_foundationdb import nested
+from sqlalchemy_foundationdb.orm import orm_nested
 
 
 class _Fixture(object):
@@ -80,7 +80,7 @@ class _Fixture(object):
         return [c1]
 
 class RenderTest(_Fixture, fixtures.MappedTest, AssertsCompiledSQL):
-    __dialect__ = 'akiban'
+    __dialect__ = 'foundationdb'
 
 
     def test_render_core_nested_alone(self):

@@ -5,7 +5,7 @@ from sqlalchemy import sql, exc, util
 from sqlalchemy.engine import default, reflection, ResultProxy
 from sqlalchemy.sql import compiler, expression
 from sqlalchemy import types as sqltypes
-from akiban.api import NESTED_CURSOR
+from fdb_sql.api import NESTED_CURSOR
 from sqlalchemy.ext.compiler import compiles
 import collections
 
@@ -39,13 +39,13 @@ _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
 
 class NestedResult(sqltypes.TypeEngine):
 
-    def akiban_result_processor(self, gen_nested_context):
+    def foundationdb_result_processor(self, gen_nested_context):
         def process(value):
             return ResultProxy(gen_nested_context(value))
         return process
 
 class nested(expression.ScalarSelect):
-    __visit_name__ = 'akiban_nested'
+    __visit_name__ = 'foundationdb_nested'
 
     def __init__(self, stmt):
         if isinstance(stmt, expression.ScalarSelect):
@@ -84,24 +84,24 @@ ischema_names = {
 }
 
 @compiles(nested)
-def _visit_akiban_nested(nested, compiler, **kw):
+def _visit_foundationdb_nested(nested, compiler, **kw):
     saved_result_map = compiler.result_map
-    if hasattr(compiler, '_akiban_nested'):
-        compiler.result_map = compiler._akiban_nested[nested.type] = {}
+    if hasattr(compiler, '_foundationdb_nested'):
+        compiler.result_map = compiler._foundationdb_nested[nested.type] = {}
     try:
         kw['force_result_map'] = True
         return compiler.visit_grouping(nested, **kw)
     finally:
         compiler.result_map = saved_result_map
 
-class AkibanCompiler(compiler.SQLCompiler):
+class FDBCompiler(compiler.SQLCompiler):
 
     @util.memoized_property
-    def _akiban_nested(self):
+    def _foundationdb_nested(self):
         return {}
 
     def render_literal_value(self, value, type_):
-        value = super(AkibanCompiler, self).render_literal_value(value, type_)
+        value = super(FDBCompiler, self).render_literal_value(value, type_)
         # TODO: need to inspect "standard_conforming_strings"
         if self.dialect._backslash_escapes:
             value = value.replace('\\', '\\\\')
@@ -127,7 +127,7 @@ class AkibanCompiler(compiler.SQLCompiler):
         return 'RETURNING ' + ', '.join(columns)
 
 
-class AkibanDDLCompiler(compiler.DDLCompiler):
+class FDBDDLCompiler(compiler.DDLCompiler):
     def get_column_specification(self, column, **kwargs):
 
         colspec = self.preparer.format_column(column)
@@ -173,23 +173,23 @@ class AkibanDDLCompiler(compiler.DDLCompiler):
 
 
 
-class AkibanTypeCompiler(compiler.GenericTypeCompiler):
+class FDBTypeCompiler(compiler.GenericTypeCompiler):
     pass
 
-class AkibanIdentifierPreparer(compiler.IdentifierPreparer):
+class FDBIdentifierPreparer(compiler.IdentifierPreparer):
 
     reserved_words = RESERVED_WORDS
 
-class AkibanInspector(reflection.Inspector):
+class FDBInspector(reflection.Inspector):
     pass
 
 
 
-class AkibanExecutionContext(default.DefaultExecutionContext):
+class FDBExecutionContext(default.DefaultExecutionContext):
     def get_result_processor(self, type_, colname, coltype):
-        if self.compiled and type_ in self.compiled._akiban_nested:
+        if self.compiled and type_ in self.compiled._foundationdb_nested:
             class NestedContext(object):
-                result_map = self.compiled._akiban_nested[type_]
+                result_map = self.compiled._foundationdb_nested[type_]
                 dialect = self.dialect
                 root_connection = self.root_connection
                 engine = self.engine
@@ -199,7 +199,7 @@ class AkibanExecutionContext(default.DefaultExecutionContext):
                 def __init__(self, value):
                     self.cursor = value
 
-            return type_.akiban_result_processor(NestedContext)
+            return type_.foundationdb_result_processor(NestedContext)
         else:
             return type_._cached_result_processor(self.dialect, coltype)
 
@@ -210,20 +210,20 @@ class AkibanExecutionContext(default.DefaultExecutionContext):
                     self.dialect.identifier_preparer.format_sequence(seq)),
                 type_)
 
-    def set_ddl_autocommit(self, connection, value):
-        """Must be implemented by subclasses to accommodate DDL executions.
-
-        "connection" is the raw unwrapped DBAPI connection.   "value"
-        is True or False.  when True, the connection should be configured
-        such that a DDL can take place subsequently.  when False,
-        a DDL has taken place and the connection should be resumed
-        into non-autocommit mode.
-
-        """
-        raise NotImplementedError()
+    #def set_ddl_autocommit(self, connection, value):
+    #    """Must be implemented by subclasses to accommodate DDL executions.
+    #
+    #    "connection" is the raw unwrapped DBAPI connection.   "value"
+    #    is True or False.  when True, the connection should be configured
+    #    such that a DDL can take place subsequently.  when False,
+    #    a DDL has taken place and the connection should be resumed
+    #   into non-autocommit mode.
+    #
+    #    """
+    #    raise NotImplementedError()
 
     def _table_identity_sequence(self, table):
-        if '_akiban_identity_sequence' not in table.info:
+        if '_foundationdb_identity_sequence' not in table.info:
             schema = table.schema or self.dialect.default_schema_name
             conn = self.root_connection
             conn._cursor_execute(
@@ -237,32 +237,9 @@ class AkibanExecutionContext(default.DefaultExecutionContext):
                     "schema": schema
                 }
             )
-            table.info['_akiban_identity_sequence'] = \
+            table.info['_foundationdb_identity_sequence'] = \
                 (schema, self.cursor.fetchone()[0])
-        return table.info['_akiban_identity_sequence']
-
-    def pre_exec(self):
-        if self.isddl:
-            # TODO: to enhance this, we can detect "ddl in tran" on the
-            # database settings.  this error message should be improved to
-            # include a note about that.
-            if not self.should_autocommit:
-                raise exc.InvalidRequestError(
-                        "The Akiban dialect only supports "
-                        "DDL in 'autocommit' mode at this time.")
-
-            self.root_connection.engine.logger.info(
-                        "AUTOCOMMIT (Assuming no Akiban 'ddl in tran')")
-
-            self.set_ddl_autocommit(
-                        self.root_connection.connection.connection,
-                        True)
-
-    def post_exec(self):
-        if self.isddl:
-            self.set_ddl_autocommit(
-                        self.root_connection.connection.connection,
-                        False)
+        return table.info['_foundationdb_identity_sequence']
 
     def get_lastrowid(self):
         assert self.isinsert, "lastrowid only supported with "\
@@ -282,8 +259,8 @@ class AkibanExecutionContext(default.DefaultExecutionContext):
             return None
 
 
-class AkibanDialect(default.DefaultDialect):
-    name = 'akiban'
+class FDBDialect(default.DefaultDialect):
+    name = 'foundationdb'
     supports_alter = False
     max_identifier_length = 63
     supports_sane_rowcount = True
@@ -302,12 +279,12 @@ class AkibanDialect(default.DefaultDialect):
     ischema_names = ischema_names
     colspecs = colspecs
 
-    statement_compiler = AkibanCompiler
-    ddl_compiler = AkibanDDLCompiler
-    type_compiler = AkibanTypeCompiler
-    preparer = AkibanIdentifierPreparer
-    execution_ctx_cls = AkibanExecutionContext
-    inspector = AkibanInspector
+    statement_compiler = FDBCompiler
+    ddl_compiler = FDBDDLCompiler
+    type_compiler = FDBTypeCompiler
+    preparer = FDBIdentifierPreparer
+    execution_ctx_cls = FDBExecutionContext
+    inspector = FDBInspector
     isolation_level = None
 
     dbapi_type_map = {
@@ -320,7 +297,7 @@ class AkibanDialect(default.DefaultDialect):
         default.DefaultDialect.__init__(self, **kwargs)
 
     def initialize(self, connection):
-        super(AkibanDialect, self).initialize(connection)
+        super(FDBDialect, self).initialize(connection)
 
     def on_connect(self):
         return None
@@ -510,8 +487,8 @@ class AkibanDialect(default.DefaultDialect):
 
         return [
             {
-                'name':name,
-                'constrained_columns':fkeys[name]
+                'name': name,
+                'constrained_columns': fkeys[name]
             } for name in fkeys
         ]
 

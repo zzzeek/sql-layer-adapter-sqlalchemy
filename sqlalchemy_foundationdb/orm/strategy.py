@@ -1,17 +1,15 @@
 from sqlalchemy.orm.strategies import AbstractRelationshipLoader
 from sqlalchemy.orm.strategies import LazyLoader
-from sqlalchemy.orm.strategies import _factory
-from sqlalchemy.orm import interfaces
+from sqlalchemy.orm import properties
 from sqlalchemy.orm import attributes
 from sqlalchemy.orm import loading
-from sqlalchemy.orm import util as orm_util
-from sqlalchemy.sql import util as sql_util
 from sqlalchemy import util
 from sqlalchemy import log
 from sqlalchemy import select
 from sqlalchemy import exc as sa_exc
 from .. import nested
 
+@properties.RelationshipProperty.strategy_for(lazy="nested")
 class NestedLoader(AbstractRelationshipLoader):
     def __init__(self, parent):
         super(NestedLoader, self).__init__(parent)
@@ -162,4 +160,3 @@ class NestedLoader(AbstractRelationshipLoader):
 
 log.class_logger(NestedLoader)
 
-_factory["akiban_nested"] = NestedLoader

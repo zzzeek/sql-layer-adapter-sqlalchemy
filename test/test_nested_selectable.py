@@ -1,11 +1,11 @@
 from sqlalchemy.testing import fixtures
 from .fixtures import cust_order_item
 from sqlalchemy import select
-from sqlalchemy_akiban import nested
+from sqlalchemy_foundationdb import nested
 from sqlalchemy.testing.assertions import AssertsCompiledSQL, eq_
 
 class NestedSelectableTest(fixtures.TablesTest, AssertsCompiledSQL):
-    __dialect__ = 'akiban'
+    __dialect__ = 'foundationdb'
 
     run_create_tables = None
     run_deletes = None

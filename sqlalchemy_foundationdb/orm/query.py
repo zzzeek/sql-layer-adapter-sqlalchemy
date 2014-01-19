@@ -1,8 +1,5 @@
-from sqlalchemy.orm import strategies as _sqla_strat
+from sqlalchemy.orm.strategy_options import loader_option, _UnboundLoad
 from ..dialect.base import NestedResult as _NestedResult, nested as _nested
-
-# bootstraps the "strategy" plugins
-from . import strategy
 
 class ORMNestedResult(_NestedResult):
     hashable = False
@@ -10,9 +7,9 @@ class ORMNestedResult(_NestedResult):
     def __init__(self, query):
         self.query = query
 
-    def akiban_result_processor(self, gen_nested_context):
+    def foundationdb_result_processor(self, gen_nested_context):
         super_process = super(ORMNestedResult, self).\
-            akiban_result_processor(gen_nested_context)
+            foundationdb_result_processor(gen_nested_context)
         def process(value):
             cursor = super_process(value)
             return list(
@@ -28,9 +25,14 @@ class orm_nested(_nested):
         self.type = ORMNestedResult(query)
 
 
-def nestedload(*keys, **kw):
-    return _sqla_strat.EagerLazyOption(keys, lazy='akiban_nested')
+@loader_option()
+def nestedload(loadopt, attr):
+    return loadopt.set_relationship_strategy(attr, {"lazy": "nested"})
 
-def nestedload_all(*keys, **kw):
-    return _sqla_strat.EagerLazyOption(keys, lazy='akiban_nested', chained=True)
+@nestedload._add_unbound_fn
+def nestedload(*keys):
+    return _UnboundLoad._from_keys(_UnboundLoad.nestedload, keys, False, {})
 
+@nestedload._add_unbound_all_fn
+def nestedload_all(*keys):
+    return _UnboundLoad._from_keys(_UnboundLoad.nestedload, keys, True, {})
