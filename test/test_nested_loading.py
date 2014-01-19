@@ -78,13 +78,6 @@ class _Fixture(object):
 class RenderTest(_Fixture, fixtures.MappedTest, AssertsCompiledSQL):
     __dialect__ = 'foundationdb'
 
-    def test_option_creation(self):
-        from sqlalchemy.orm.strategies import EagerLazyOption
-        Customer = self.classes.Customer
-        opt = orm.nestedload(Customer.orders)
-        assert isinstance(opt, EagerLazyOption)
-        is_(opt.key[0], Customer.orders)
-
     def test_render_basic_nested(self):
         Customer = self.classes.Customer
         s = Session()

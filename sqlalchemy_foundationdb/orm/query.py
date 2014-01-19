@@ -1,5 +1,6 @@
 from sqlalchemy.orm.strategy_options import loader_option, _UnboundLoad
 from ..dialect.base import NestedResult as _NestedResult, nested as _nested
+from . import strategy
 
 class ORMNestedResult(_NestedResult):
     hashable = False
@@ -36,3 +37,6 @@ def nestedload(*keys):
 @nestedload._add_unbound_all_fn
 def nestedload_all(*keys):
     return _UnboundLoad._from_keys(_UnboundLoad.nestedload, keys, True, {})
+
+nestedload = nestedload._unbound_fn
+nestedload_all = nestedload_all._unbound_all_fn

@@ -19,7 +19,7 @@ class NestedLoader(AbstractRelationshipLoader):
         self.parent_property.\
             _get_strategy(LazyLoader).init_class_attribute(mapper)
 
-    def setup_query(self, context, entity, path, adapter, \
+    def setup_query(self, context, entity, path, loadopt, adapter, \
                                 column_collection=None,
                                 parentmapper=None,
                                 **kwargs):
@@ -27,13 +27,13 @@ class NestedLoader(AbstractRelationshipLoader):
         if not context.query._enable_eagerloads:
             return
 
-        path = path[self.key]
+        path = path[self.parent_property]
 
         with_polymorphic = None
 
         # if not via query option, check for
         # a cycle
-        if not path.contains(context, "loaderstrategy"):
+        if not path.contains(context.attributes, "loader"):
             if self.join_depth:
                 if path.length / 2 > self.join_depth:
                     return
@@ -48,7 +48,7 @@ class NestedLoader(AbstractRelationshipLoader):
         source_selectable = entity.selectable
 
         with_poly_info = path.get(
-            context,
+            context.attributes,
             "path_with_polymorphic",
             None
         )
@@ -90,21 +90,21 @@ class NestedLoader(AbstractRelationshipLoader):
         our_col = nested(select(add_to_collection).where(pj).as_scalar())
 
         # store it
-        path.set(context, "nested_result", our_col)
+        path.set(context.attributes, "nested_result", our_col)
 
         # send it to the caller
         context.secondary_columns.append(our_col)
 
-    def create_row_processor(self, context, path, mapper, row, adapter):
+    def create_row_processor(self, context, path, loadopt, mapper, row, adapter):
         if not self.parent.class_manager[self.key].impl.supports_population:
             raise sa_exc.InvalidRequestError(
                         "'%s' does not support object "
                         "population - eager loading cannot be applied." %
                         self)
 
-        path = path[self.key]
+        path = path[self.parent_property]
 
-        our_col = path.get(context, "nested_result")
+        our_col = path.get(context.attributes, "nested_result")
         if our_col in row:
             _instance = loading.instance_processor(
                                 self.mapper,
@@ -123,7 +123,7 @@ class NestedLoader(AbstractRelationshipLoader):
             return self.parent_property.\
                             _get_strategy(LazyLoader).\
                             create_row_processor(
-                                            context, path,
+                                            context, path, loadopt,
                                             mapper, row, adapter)
 
 
