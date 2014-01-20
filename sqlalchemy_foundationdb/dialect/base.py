@@ -4,7 +4,7 @@ import re
 from sqlalchemy import sql, exc, util
 from sqlalchemy.engine import default, reflection, ResultProxy
 from sqlalchemy.sql import compiler, expression
-from sqlalchemy import types as sqltypes
+from sqlalchemy import types as sqltypes, schema as sa_schema
 from fdb_sql.api import NESTED_CURSOR
 from sqlalchemy.ext.compiler import compiles
 import collections
@@ -158,12 +158,16 @@ class FDBDDLCompiler(compiler.DDLCompiler):
             text += "CONSTRAINT %s " % \
                         preparer.format_constraint(constraint)
         remote_table = list(constraint._elements.values())[0].column.table
-        text += "GROUPING FOREIGN KEY(%s) REFERENCES %s (%s)" % (
-            ', '.join(preparer.quote(f.parent.name, f.parent.quote)
+
+        text += "%sFOREIGN KEY(%s) REFERENCES %s (%s)" % (
+            "GROUPING "
+                if constraint.dialect_options['foundationdb']['grouping']
+                else "",
+            ', '.join(preparer.quote(f.parent.name)
                       for f in constraint._elements.values()),
             self.define_constraint_remote_table(
                             constraint, remote_table, preparer),
-            ', '.join(preparer.quote(f.column.name, f.column.quote)
+            ', '.join(preparer.quote(f.column.name)
                       for f in constraint._elements.values())
         )
         #text += self.define_constraint_match(constraint)
@@ -290,6 +294,13 @@ class FDBDialect(default.DefaultDialect):
     dbapi_type_map = {
         NESTED_CURSOR: NestedResult()
     }
+
+    construct_arguments = [
+        (sa_schema.ForeignKeyConstraint, {
+            "grouping": False,
+        })
+    ]
+
     # TODO: need to inspect "standard_conforming_strings"
     _backslash_escapes = True
 

@@ -11,14 +11,16 @@ def cust_order_item(metadata):
     Table('order',
         metadata,
         Column('id', Integer, primary_key=True),
-        Column('customer_id', Integer, ForeignKey('customer.id')),
+        Column('customer_id', Integer,
+                    ForeignKey('customer.id', foundationdb_grouping=True)),
         Column('order_info', String(20)),
     )
 
     Table('item',
         metadata,
         Column('id', Integer, primary_key=True),
-        Column('order_id', Integer, ForeignKey('order.id')),
+        Column('order_id', Integer,
+                    ForeignKey('order.id', foundationdb_grouping=True)),
         Column('price', Numeric(10, 2)),
         Column('quantity', Integer)
     )
@@ -35,7 +37,7 @@ def cust_order_data(cls):
     config.db.execute(
         customer.insert(),
         [
-        {"id":id_, "name":name} for id_, name in
+        {"id": id_, "name": name} for id_, name in
             [(1, 'David McFarlane'),
             (2, 'Ori Herrnstadt'),
             (3, 'Tim Wegner'),
@@ -54,7 +56,7 @@ def cust_order_data(cls):
     config.db.execute(
         order.insert(),
         [
-            {"id":id_, "customer_id":customer_id, "order_info":order_info}
+            {"id": id_, "customer_id": customer_id, "order_info": order_info}
             for id_, customer_id, order_info, dt in
             [
                 (101, 1, 'apple related', '2012-09-05 17:24:12'),
@@ -91,7 +93,7 @@ def cust_order_data(cls):
     config.db.execute(
         item.insert(),
         [
-            {"id":id_, "order_id":order_id, "price":price, "quantity":quantity}
+            {"id": id_, "order_id": order_id, "price": price, "quantity": quantity}
             for id_, order_id, price, quantity in
             [
             (1001, 101, 9.99, 1),

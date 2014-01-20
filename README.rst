@@ -53,8 +53,10 @@ which is a new SQLAlchemy ``ResultProxy`` representing a nested result::
 DDL Integration
 ===============
 
-Currently, FoundationDB requires the GROUPING keyword on all foreign keys.   The dialect
-adds this keyword when emitting DDL for foreign keys::
+At the core of FoundationDB SQL's nested result set capability is the
+"grouped foreign key".   This is a FOREIGN KEY construct which includes
+the "GROUPING" keyword.  To render this DDL, use the ``foundationdb_grouping=True``
+keyword argument on either ``ForeignKeyConstraint`` or ``ForeignKey``::
 
     from sqlalchemy import MetaData, Table, Column, String, Integer, ForeignKey
     metadata = MetaData()
@@ -67,7 +69,8 @@ adds this keyword when emitting DDL for foreign keys::
     order = Table('order',
         metadata,
         Column('id', Integer, primary_key=True),
-        Column('customer_id', Integer, ForeignKey('customer.id')),
+        Column('customer_id', Integer,
+                    ForeignKey('customer.id', foundationdb_grouping=True)),
         Column('order_info', String(20)),
     )
 
