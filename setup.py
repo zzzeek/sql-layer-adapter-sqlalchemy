@@ -29,15 +29,15 @@ setup(name='sqlalchemy-foundationdb',
       author_email='mike@zzzcomputing.com',
       license='MIT',
       packages=['sqlalchemy_sqlalchemy_foundationdb'],
-      install_requires=['fdb_sql >= 0.9'],
+      install_requires=['fdb_sql >= 0.9', 'sqlalchemy >= 0.9.2'],
       include_package_data=True,
       tests_require=['nose >= 0.11'],
       test_suite="run_tests",
       zip_safe=False,
       entry_points={
          'sqlalchemy.dialects': [
-              'sqlalchemy_foundationdb = sqlalchemy_sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
-              'sqlalchemy_foundationdb.psycopg2 = sqlalchemy_sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
+              'sqlalchemy_foundationdb = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
+              'sqlalchemy_foundationdb.psycopg2 = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
               ]
         }
 )

@@ -100,7 +100,7 @@ intercepted by the FoundationDB dialect indicating that column and typing inform
 a "nested result" should be carried over from statement to result set::
 
     from sqlalchemy import select
-    from sqlalchemy_sqlalchemy_foundationdb import nested
+    from sqlalchemy_foundationdb import nested
 
     sub_stmt = nested([order]).where(order.c.customer_id
                                             == customer.c.id).label('o')
@@ -130,7 +130,7 @@ columns::
 ORM Integration
 ===============
 
-SQLAlchemy-FoundationDB includes ORM extensions, importable from the ``sqlalchemy_sqlalchemy_foundationdb.orm`` package.
+SQLAlchemy-FoundationDB includes ORM extensions, importable from the ``sqlalchemy_foundationdb.orm`` package.
 
 Nested Eager Loading
 --------------------
@@ -141,7 +141,7 @@ making usage of an embedded nested result.  These are used just like SQLAlchemy'
 
     from sqlalchemy.orm import relationship, Session
     from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy_sqlalchemy_foundationdb import orm
+    from sqlalchemy_foundationdb import orm
 
     Base = declarative_base()
 
