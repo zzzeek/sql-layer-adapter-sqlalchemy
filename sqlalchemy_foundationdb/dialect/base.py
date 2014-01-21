@@ -100,13 +100,6 @@ class FDBCompiler(compiler.SQLCompiler):
     def _foundationdb_nested(self):
         return {}
 
-    def render_literal_value(self, value, type_):
-        value = super(FDBCompiler, self).render_literal_value(value, type_)
-        # TODO: need to inspect "standard_conforming_strings"
-        if self.dialect._backslash_escapes:
-            value = value.replace('\\', '\\\\')
-        return value
-
     def limit_clause(self, select):
         text = ""
         if select._limit is not None:
@@ -116,6 +109,9 @@ class FDBCompiler(compiler.SQLCompiler):
             if select._limit is None:
                 text += " ROWS"  # OFFSET n ROW[S]
         return text
+
+    def visit_sequence(self, seq):
+        return "nextval('%s')" % self.preparer.format_sequence(seq)
 
     def returning_clause(self, stmt, returning_cols):
         columns = [
@@ -175,6 +171,23 @@ class FDBDDLCompiler(compiler.DDLCompiler):
         #text += self.define_constraint_deferrability(constraint)
         return text
 
+    def visit_create_sequence(self, create):
+        text = "CREATE SEQUENCE %s" % \
+                self.preparer.format_sequence(create.element)
+        if create.element.increment is not None:
+            text += " INCREMENT BY %d" % create.element.increment
+        if create.element.start is not None:
+            text += " START WITH %d" % create.element.start
+        else:
+            # for some reason my sequences are defaulting to start
+            # with min int
+            text += " START WITH 1"
+        return text
+
+    def visit_drop_sequence(self, drop):
+        return "DROP SEQUENCE %s RESTRICT" % \
+                self.preparer.format_sequence(drop.element)
+
 
 
 class FDBTypeCompiler(compiler.GenericTypeCompiler):
@@ -214,53 +227,43 @@ class FDBExecutionContext(default.DefaultExecutionContext):
                     self.dialect.identifier_preparer.format_sequence(seq)),
                 type_)
 
-    #def set_ddl_autocommit(self, connection, value):
-    #    """Must be implemented by subclasses to accommodate DDL executions.
-    #
-    #    "connection" is the raw unwrapped DBAPI connection.   "value"
-    #    is True or False.  when True, the connection should be configured
-    #    such that a DDL can take place subsequently.  when False,
-    #    a DDL has taken place and the connection should be resumed
-    #   into non-autocommit mode.
-    #
-    #    """
-    #    raise NotImplementedError()
-
     def _table_identity_sequence(self, table):
         if '_foundationdb_identity_sequence' not in table.info:
             schema = table.schema or self.dialect.default_schema_name
-            conn = self.root_connection
-            conn._cursor_execute(
-                self.cursor,
-                "select sequence_name from "
-                "information_schema.columns "
-                "where schema_name=%(schema)s and "
-                "table_name=%(tname)s",
-                {
-                    "tname": table.name,
-                    "schema": schema
-                }
+            value = self.connection.scalar(
+                sql.text(
+                    "select sequence_name from "
+                    "information_schema.columns "
+                    "where table_schema=:schema and "
+                    "table_name=:tname"
+                ).bindparams(schema=schema, tname=table.name),
             )
-            table.info['_foundationdb_identity_sequence'] = \
-                (schema, self.cursor.fetchone()[0])
+            table.info['_foundationdb_identity_sequence'] = (schema, value)
         return table.info['_foundationdb_identity_sequence']
 
-    def get_lastrowid(self):
-        assert self.isinsert, "lastrowid only supported with "\
-                    "compiled insert() construct."
-        tbl = self.compiled.statement.table
 
-        seq_column = tbl._autoincrement_column
-        insert_has_sequence = seq_column is not None
-        if insert_has_sequence:
-            schema_, sequence_name = self._table_identity_sequence(tbl)
-            self.root_connection._cursor_execute(self.cursor,
-                    "SELECT currval(%s, %s) AS lastrowid",
-                        (schema_, sequence_name),
-                    self)
-            return self.cursor.fetchone()[0]
-        else:
-            return None
+    def get_insert_default(self, column):
+        if column.primary_key and column is column.table._autoincrement_column:
+            if column.server_default and column.server_default.has_argument:
+
+                # pre-execute passive defaults on primary key columns
+                return self._execute_scalar("select %s" %
+                                    column.server_default.arg, column.type)
+
+            elif (column.default is None or
+                        (column.default.is_sequence and
+                        column.default.optional)):
+
+                # execute the sequence associated with an IDENTITY primary
+                # key column. for non-primary-key SERIAL, the ID just
+                # generates server side.
+
+                schema, seq_name = self._table_identity_sequence(column.table)
+
+                stmt = "select nextval('\"%s\".\"%s\"')" % (schema, seq_name)
+                return self._execute_scalar(stmt, column.type)
+
+        return super(FDBExecutionContext, self).get_insert_default(column)
 
 
 class FDBDialect(default.DefaultDialect):
@@ -272,10 +275,11 @@ class FDBDialect(default.DefaultDialect):
     supports_native_enum = False
     supports_native_boolean = False
 
-    supports_sequences = False  # TODO: True
+    supports_sequences = True
     sequences_optional = True
-    preexecute_autoincrement_sequences = False
-    postfetch_lastrowid = True
+    preexecute_autoincrement_sequences = True
+    postfetch_lastrowid = False
+    implicit_returning = True
 
     supports_default_values = True
     supports_empty_insert = False
@@ -291,6 +295,9 @@ class FDBDialect(default.DefaultDialect):
     inspector = FDBInspector
     isolation_level = None
 
+    supports_empty_insert = False
+    supports_default_values = False
+
     dbapi_type_map = {
         NESTED_CURSOR: NestedResult()
     }
@@ -300,9 +307,6 @@ class FDBDialect(default.DefaultDialect):
             "grouping": False,
         })
     ]
-
-    # TODO: need to inspect "standard_conforming_strings"
-    _backslash_escapes = True
 
     def __init__(self, **kwargs):
         default.DefaultDialect.__init__(self, **kwargs)
@@ -336,7 +340,16 @@ class FDBDialect(default.DefaultDialect):
         return bool(cursor.first())
 
     def has_sequence(self, connection, sequence_name, schema=None):
-        raise NotImplementedError("has sequence")
+        if schema is None:
+            schema = self.default_schema_name
+        cursor = connection.execute(
+            sql.text(
+                "SELECT sequence_name FROM information_schema.sequences "
+                "WHERE sequence_name=:name AND sequence_schema=:schema"
+            ).bindparams(name=sequence_name, schema=schema)
+        )
+
+        return bool(cursor.first())
 
     def _get_server_version_info(self, connection):
         ver = connection.scalar("select server_version from "

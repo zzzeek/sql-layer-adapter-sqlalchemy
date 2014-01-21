@@ -13,11 +13,6 @@ class FDBPsycopg2ExecutionContext(FDBExecutionContext):
     def create_cursor(self):
         return self._dbapi_connection.cursor(nested=not self.is_crud)
 
-    #def set_ddl_autocommit(self, connection, value):
-    #    # this is psycopg2.autocommit:
-    #    # http://initd.org/psycopg/docs/connection.html#connection.autocommit
-    #    connection.commit()
-    #    connection.autocommit = value
 
 class FDBPsycopg2Dialect(FDBDialect):
     use_native_unicode = True

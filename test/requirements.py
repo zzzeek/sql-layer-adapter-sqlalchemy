@@ -43,6 +43,7 @@ class Requirements(SuiteRequirements):
     def returning(self):
         return exclusions.open()
 
+
     @property
     def text_type(self):
         """Target database must support an unbounded Text() "
