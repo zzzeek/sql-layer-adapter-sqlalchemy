@@ -68,46 +68,46 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.datetime() objects."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def datetime_microseconds(self):
         """target dialect supports representation of Python
         datetime.datetime() with microsecond objects."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def datetime_historic(self):
         """target dialect supports representation of Python
         datetime.datetime() objects with historic (pre 1900) values."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def date(self):
         """target dialect supports representation of Python
         datetime.date() objects."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def date_historic(self):
         """target dialect supports representation of Python
         datetime.datetime() objects with historic (pre 1900) values."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def time(self):
         """target dialect supports representation of Python
         datetime.time() objects."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def time_microseconds(self):
         """target dialect supports representation of Python
         datetime.time() with microsecond objects."""
 
-        return exclusions.closed()
+        return exclusions.open()
