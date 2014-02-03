@@ -3,7 +3,7 @@ import re
 
 from setuptools import setup
 
-v = open(os.path.join(os.path.dirname(__file__), 'sqlalchemy_sqlalchemy_foundationdb', '__init__.py'))
+v = open(os.path.join(os.path.dirname(__file__), 'sqlalchemy_foundationdb', '__init__.py'))
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
@@ -28,7 +28,7 @@ setup(name='sqlalchemy-foundationdb',
       author='Mike Bayer',
       author_email='mike@zzzcomputing.com',
       license='MIT',
-      packages=['sqlalchemy_sqlalchemy_foundationdb'],
+      packages=['sqlalchemy_foundationdb'],
       install_requires=['fdb_sql >= 0.9', 'sqlalchemy >= 0.9.2'],
       include_package_data=True,
       tests_require=['nose >= 0.11'],
