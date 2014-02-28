@@ -75,7 +75,7 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.datetime() with microsecond objects."""
 
-        return exclusions.open()
+        return exclusions.closed()
 
     @property
     def datetime_historic(self):
@@ -110,4 +110,4 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.time() with microsecond objects."""
 
-        return exclusions.open()
+        return exclusions.closed()
