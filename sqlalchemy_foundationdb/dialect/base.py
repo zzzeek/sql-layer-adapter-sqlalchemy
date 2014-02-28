@@ -3,14 +3,14 @@ import re
 
 from sqlalchemy import sql, exc, util
 from sqlalchemy.engine import default, reflection, ResultProxy
-from sqlalchemy.sql import compiler, expression
+from sqlalchemy.sql import compiler, expression, text
 from sqlalchemy import types as sqltypes, schema as sa_schema
 from fdb_sql.api import NESTED_CURSOR
 from sqlalchemy.ext.compiler import compiles
 import collections
 
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
-        CHAR, TEXT, FLOAT, NUMERIC, \
+        CHAR, TEXT, FLOAT, NUMERIC, DATETIME, VARBINARY, \
         DATE, BOOLEAN, REAL, TIMESTAMP, \
         TIME
 
@@ -35,6 +35,11 @@ RESERVED_WORDS = set(
 _DECIMAL_TYPES = (1231, 1700)
 _FLOAT_TYPES = (700, 701, 1021, 1022)
 _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
+
+
+
+class DOUBLE(sqltypes.Float):
+    __visit_name__ = 'DOUBLE'
 
 
 class NestedResult(sqltypes.TypeEngine):
@@ -62,25 +67,17 @@ colspecs = {
 }
 
 ischema_names = {
-    'integer': INTEGER,
-    'bigint': BIGINT,
-    'smallint': SMALLINT,
-    'character varying': VARCHAR,
-    'character': CHAR,
-    '"char"': sqltypes.String,
-    'name': sqltypes.String,
-    'text': TEXT,
-    'numeric': NUMERIC,
-    'float': FLOAT,
-    'real': REAL,
-    'timestamp': TIMESTAMP,
-    'timestamp with time zone': TIMESTAMP,
-    'timestamp without time zone': TIMESTAMP,
-    'time with time zone': TIME,
-    'time without time zone': TIME,
-    'date': DATE,
-    'time': TIME,
-    'boolean': BOOLEAN,
+    "BIGINT": BIGINT,
+    "CHAR": CHAR,
+    "DATETIME": DATETIME,
+    "DOUBLE": DOUBLE,
+    "INT": INTEGER,
+    "TEXT": TEXT,
+    "TIME": TIME,
+    "TIMESTAMP": TIMESTAMP,
+    "VARBINARY": VARBINARY,
+    "VARCHAR": VARCHAR,
+
 }
 
 @compiles(nested)
@@ -191,7 +188,8 @@ class FDBDDLCompiler(compiler.DDLCompiler):
 
 
 class FDBTypeCompiler(compiler.GenericTypeCompiler):
-    pass
+    def visit_DOUBLE(self, type_):
+        return "DOUBLE"
 
 class FDBIdentifierPreparer(compiler.IdentifierPreparer):
 
@@ -266,6 +264,7 @@ class FDBExecutionContext(default.DefaultExecutionContext):
         return super(FDBExecutionContext, self).get_insert_default(column)
 
 
+
 class FDBDialect(default.DefaultDialect):
     name = 'foundationdb'
     supports_alter = False
@@ -324,11 +323,7 @@ class FDBDialect(default.DefaultDialect):
         raise NotImplementedError("has_schema")
 
     def has_table(self, connection, table_name, schema=None):
-        # seems like case gets folded in pg_class...
-        if schema is not None:
-            raise NotImplementedError("remote schemas")
-        else:
-            schema = self.default_schema_name
+        schema = schema or self.default_schema_name
 
         cursor = connection.execute(
             sql.text(
@@ -340,8 +335,7 @@ class FDBDialect(default.DefaultDialect):
         return bool(cursor.first())
 
     def has_sequence(self, connection, sequence_name, schema=None):
-        if schema is None:
-            schema = self.default_schema_name
+        schema = schema or self.default_schema_name
         cursor = connection.execute(
             sql.text(
                 "SELECT sequence_name FROM information_schema.sequences "
@@ -358,19 +352,19 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_schema_names(self, connection, **kw):
-        raise NotImplementedError("schema names")
+        cursor = connection.execute(
+            sql.text("select schema_name from information_schema.schemata")
+            )
+        return [row[0] for row in cursor.fetchall()]
 
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
-        if schema is not None:
-            raise NotImplementedError("remote schemas")
-        else:
-            schema = self.default_schema_name
+        schema = schema or self.default_schema_name
 
         cursor = connection.execute(
             sql.text(
             "select table_name from information_schema.tables "
-            "where table_schema=:schema"
+            "where table_schema=:schema AND table_type='TABLE'"
             ),
             {"schema": schema}
         )
@@ -379,7 +373,16 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_view_names(self, connection, schema=None, **kw):
-        raise NotImplementedError("view names")
+        schema = schema or self.default_schema_name
+
+        cursor = connection.execute(
+            sql.text(
+            "select table_name from information_schema.tables "
+            "where table_schema=:schema AND table_type='VIEW'"
+            ),
+            {"schema": schema}
+        )
+        return [row[0] for row in cursor.fetchall()]
 
     @reflection.cache
     def get_view_definition(self, connection, view_name, schema=None, **kw):
@@ -387,97 +390,49 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
-        raise NotImplementedError()
+        stmt = text(
+                    "SELECT column_name, data_type, is_nullable, "
+                    "character_maximum_length, "
+                    "numeric_precision, numeric_scale, "
+                    "column_default, "
+                    "is_identity, identity_start, identity_increment "
+                    "FROM information_schema.columns "
+                    "WHERE table_schema=:schema AND table_name=:table "
+                    "ORDER BY ordinal_position").bindparams(
+                        schema=schema or self.default_schema_name,
+                        table=table_name
+                    )
 
-    def _get_column_info(self, name, format_type, default,
-                         notnull, schema):
-        ## strip (*) from character varying(5), timestamp(5)
-        # with time zone, geometry(POLYGON), etc.
-        attype = re.sub(r'\(.*\)', '', format_type)
+        columns = []
+        for cname, type_, nullable, length, precision, \
+            scale, default, is_ident, ident_start, ident_increment in connection.execute(stmt):
 
-        # strip '[]' from integer[], etc.
-        attype = re.sub(r'\[\]', '', attype)
-
-        nullable = not notnull
-        charlen = re.search('\(([\d,]+)\)', format_type)
-        if charlen:
-            charlen = charlen.group(1)
-        args = re.search('\((.*)\)', format_type)
-        if args and args.group(1):
-            args = tuple(re.split('\s*,\s*', args.group(1)))
-        else:
-            args = ()
-        kwargs = {}
-
-        if attype == 'numeric':
-            if charlen:
-                prec, scale = charlen.split(',')
-                args = (int(prec), int(scale))
+            try:
+                coltype = ischema_names[type_]
+            except KeyError:
+                util.warn("Did not recognize type '%s' of column '%s'" %
+                      (type_, cname))
+                coltype = sqltypes.NULLTYPE
             else:
-                args = ()
-        elif attype == 'double precision':
-            args = (53, )
-        elif attype == 'integer':
-            args = ()
-        elif attype in ('timestamp with time zone',
-                        'time with time zone'):
-            kwargs['timezone'] = True
-            if charlen:
-                kwargs['precision'] = int(charlen)
-            args = ()
-        elif attype in ('timestamp without time zone',
-                        'time without time zone', 'time'):
-            kwargs['timezone'] = False
-            if charlen:
-                kwargs['precision'] = int(charlen)
-            args = ()
-        elif attype == 'bit varying':
-            kwargs['varying'] = True
-            if charlen:
-                args = (int(charlen),)
-            else:
-                args = ()
-        elif attype in ('interval', 'interval year to month',
-                            'interval day to second'):
-            if charlen:
-                kwargs['precision'] = int(charlen)
-            args = ()
-        elif charlen:
-            args = (int(charlen),)
+                if issubclass(coltype, sqltypes.Float):
+                    coltype = coltype()
+                elif issubclass(coltype, sqltypes.Float):
+                    coltype = coltype(precision, scale)
+                elif issubclass(coltype, sqltypes.String):
+                    coltype = coltype(length)
+                    if default:
+                        default = "'%s'" % default.replace("'", "''")
+                else:
+                    coltype = coltype()
+            autoincrement = is_ident == 'YES'
+            nullable = nullable == 'YES'
 
-        while True:
-            if attype in self.ischema_names:
-                coltype = self.ischema_names[attype]
-                break
-            else:
-                coltype = None
-                break
-
-        if coltype:
-            coltype = coltype(*args, **kwargs)
-        else:
-            util.warn("Did not recognize type '%s' of column '%s'" %
-                      (attype, name))
-            coltype = sqltypes.NULLTYPE
-        # adjust the default value
-        autoincrement = False
-        if default is not None:
-            match = re.search(r"""(nextval\(')([^']+)('.*$)""", default)
-            if match is not None:
-                autoincrement = True
-                # the default is related to a Sequence
-                sch = schema
-                if '.' not in match.group(2) and sch is not None:
-                    # unconditionally quote the schema name.  this could
-                    # later be enhanced to obey quoting rules /
-                    # "quote schema"
-                    default = match.group(1) + \
-                                ('"%s"' % sch) + '.' + \
-                                match.group(2) + match.group(3)
-
-        column_info = dict(name=name, type=coltype, nullable=nullable,
+            column_info = dict(name=cname, type=coltype, nullable=nullable,
                            default=default, autoincrement=autoincrement)
-        return column_info
+
+            columns.append(column_info)
+        return columns
+
 
     @reflection.cache
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
@@ -485,36 +440,73 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
-        if schema is not None:
-            raise NotImplementedError("remote schemas")
-        else:
-            schema = self.default_schema_name
+        schema = schema or self.default_schema_name
 
-        FK_SQL = """
-            SELECT tc.constraint_name, tc.constraint_type, kcu.column_name
-            FROM information_schema.table_constraints AS tc
-                JOIN information_schema.key_column_usage AS kcu
-                ON tc.schema_name=kcu.schema_name AND tc.table_name=kcu.table_name
-                WHERE tc.schema_name=:schema
-                AND tc.table_name=:table
-                ORDER BY kcu.ordinal_position
-        """
+        fks = {}
+        for grouping in False, True:
+            stmt = text("SELECT rc.constraint_name, rfnced.table_schema, "
+                            "rfnced.table_name "
+                    "FROM information_schema.table_constraints AS tc "
+                    "JOIN information_schema.%s AS rc "
+                        "ON tc.constraint_name=rc.constraint_name "
+                        "AND tc.constraint_schema=rc.constraint_schema "
+                    "JOIN information_schema.table_constraints AS rfnced ON "
+                    "rc.unique_%sschema=rfnced.constraint_schema AND "
+                    "rc.unique_constraint_name=rfnced.constraint_name "
+                    "WHERE tc.table_schema=:schema AND tc.table_name=:table "
+                    % (
+                            "referential_constraints"
+                                if not grouping else "grouping_constraints",
+                            "constraint_"
+                                if not grouping else "",
+                        )
+                ).bindparams(schema=schema, table=table_name)
 
-        t = sql.text(FK_SQL)
-        c = connection.execute(t, table=table_name, schema=schema)
-        fkeys = collections.defaultdict(list)
+            for conname, referred_schema, referred_table in connection.execute(stmt):
+                fks[conname] = {
+                    'name': conname,
+                    'constrained_columns': [],
+                    'referred_schema': referred_schema
+                                    if referred_schema != self.default_schema_name
+                                    else None,
+                    'referred_table': referred_table,
+                    'referred_columns': [],
+                    'options': {
+                        'grouping': grouping
+                        #'onupdate': onupdate,
+                        #'ondelete': ondelete,
+                    }
+                }
 
-        # TODO: this is way too simplistic, can't get referents here.
-        # might need to regexp a CREATE TABLE statement or similar here.
-        for conname, contype, colname in c.fetchall():
-            fkeys[conname].append(colname)
+            stmt = text("SELECT rc.constraint_name, lcl.column_name as lcn, rmt.column_name as rcn"
+                    " FROM information_schema.table_constraints AS tc "
+                    " JOIN information_schema.%s AS rc "
+                        "ON tc.constraint_name=rc.constraint_name "
+                        "AND tc.constraint_schema=rc.constraint_schema "
+                    " JOIN information_schema.key_column_usage AS lcl ON "
+                        "rc.constraint_name=lcl.constraint_name "
+                        "AND rc.constraint_schema=lcl.constraint_schema "
+                    " JOIN information_schema.key_column_usage AS rmt ON "
+                        "rc.unique_%sschema=rmt.constraint_schema AND "
+                        "rc.unique_constraint_name=rmt.constraint_name AND "
+                        "lcl.ordinal_position=rmt.ordinal_position "
+                        "WHERE tc.table_schema=:schema AND tc.table_name=:table "
+                        "ORDER BY lcl.ordinal_position" %
+                        (
+                            "referential_constraints"
+                                if not grouping else "grouping_constraints",
+                            "constraint_"
+                                if not grouping else "",
+                        )
+                    ).bindparams(schema=schema, table=table_name)
 
-        return [
-            {
-                'name': name,
-                'constrained_columns': fkeys[name]
-            } for name in fkeys
-        ]
+
+            for cname, lclname, rmtname in connection.execute(stmt):
+                fk = fks[cname]
+                fk['constrained_columns'].append(lclname)
+                fk['referred_columns'].append(rmtname)
+
+        return list(fks.values())
 
     @reflection.cache
     def get_indexes(self, connection, table_name, schema, **kw):

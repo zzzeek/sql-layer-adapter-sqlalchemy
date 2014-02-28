@@ -9,15 +9,23 @@ class Requirements(SuiteRequirements):
 
     @property
     def self_referential_foreign_keys(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def table_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def unique_constraint_reflection(self):
         return exclusions.closed()
+
+    @property
+    def views(self):
+        return exclusions.open()
+
+    @property
+    def view_column_reflection(self):
+        return exclusions.open()
 
     @property
     def view_reflection(self):
@@ -25,7 +33,14 @@ class Requirements(SuiteRequirements):
 
     @property
     def schema_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
+
+    @property
+    def schemas(self):
+        """Target database must support external schemas, and have one
+        named 'test_schema'."""
+
+        return exclusions.open()
 
     @property
     def primary_key_constraint_reflection(self):
@@ -33,7 +48,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def foreign_key_constraint_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def index_reflection(self):
