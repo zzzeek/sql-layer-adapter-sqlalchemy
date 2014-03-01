@@ -379,14 +379,20 @@ class FDBDialect(default.DefaultDialect):
             sql.text(
             "select table_name from information_schema.tables "
             "where table_schema=:schema AND table_type='VIEW'"
-            ),
-            {"schema": schema}
+            ).bindparams(schema=schema)
         )
         return [row[0] for row in cursor.fetchall()]
 
     @reflection.cache
     def get_view_definition(self, connection, view_name, schema=None, **kw):
-        raise NotImplementedError("view definition")
+        schema = schema or self.default_schema_name
+        cursor = connection.execute(
+            sql.text(
+            "select view_definition from information_schema.views "
+            "where table_schema=:schema AND table_name=:viewname"
+            ).bindparams(schema=schema, viewname=view_name),
+        )
+        return cursor.scalar()
 
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):

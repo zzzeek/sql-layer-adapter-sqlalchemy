@@ -29,7 +29,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def view_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def schema_reflection(self):
