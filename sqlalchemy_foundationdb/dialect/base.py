@@ -11,7 +11,7 @@ import collections
 
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
         CHAR, TEXT, FLOAT, NUMERIC, DATETIME, VARBINARY, \
-        DATE, BOOLEAN, REAL, TIMESTAMP, \
+        DATE, BOOLEAN, REAL, TIMESTAMP, DECIMAL, \
         TIME
 
 RESERVED_WORDS = set(
@@ -72,6 +72,7 @@ ischema_names = {
     "DATETIME": DATETIME,
     "DOUBLE": DOUBLE,
     "INT": INTEGER,
+    "DECIMAL": DECIMAL,
     "TEXT": TEXT,
     "TIME": TIME,
     "TIMESTAMP": TIMESTAMP,
@@ -422,7 +423,7 @@ class FDBDialect(default.DefaultDialect):
             else:
                 if issubclass(coltype, sqltypes.Float):
                     coltype = coltype()
-                elif issubclass(coltype, sqltypes.Float):
+                elif issubclass(coltype, sqltypes.Numeric):
                     coltype = coltype(precision, scale)
                 elif issubclass(coltype, sqltypes.String):
                     coltype = coltype(length)
