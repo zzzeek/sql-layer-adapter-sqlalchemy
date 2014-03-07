@@ -1,28 +1,41 @@
 from sqlalchemy import Table, Column, Integer, String, Numeric, ForeignKey
 from sqlalchemy.testing import config
 
-def cust_order_item(metadata):
+def cust_order_item(metadata, schema=None):
+    if schema:
+        schema_prefix = "%s." % schema
+    else:
+        schema_prefix = ""
+
     Table('customer',
         metadata,
         Column('id', Integer, primary_key=True),
         Column('name', String(20)),
+        schema=schema
     )
 
     Table('order',
         metadata,
         Column('id', Integer, primary_key=True),
         Column('customer_id', Integer,
-                    ForeignKey('customer.id', foundationdb_grouping=True)),
+                    ForeignKey('%scustomer.id' % schema_prefix,
+                                    foundationdb_grouping=True
+                                    )),
         Column('order_info', String(20)),
+        schema=schema
     )
 
     Table('item',
         metadata,
         Column('id', Integer, primary_key=True),
         Column('order_id', Integer,
-                    ForeignKey('order.id', foundationdb_grouping=True)),
+                    ForeignKey('%sorder.id' % schema_prefix,
+                                    foundationdb_grouping=True,
+                                    name='item_order_fk'
+                                    )),
         Column('price', Numeric(10, 2)),
-        Column('quantity', Integer)
+        Column('quantity', Integer),
+        schema=schema
     )
 
 def cust_order_data(cls):

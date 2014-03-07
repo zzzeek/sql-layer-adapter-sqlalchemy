@@ -440,10 +440,55 @@ class FDBDialect(default.DefaultDialect):
             columns.append(column_info)
         return columns
 
+    @reflection.cache
+    def get_unique_constraints(self, connection, table_name, schema=None, **kw):
+        return self._get_uq_pk_constraints(connection, "UNIQUE", table_name,
+                                                schema, **kw)
 
     @reflection.cache
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
-        raise NotImplementedError()
+        pks = self._get_uq_pk_constraints(connection, "PRIMARY KEY", table_name,
+                                                schema, **kw)
+        if pks:
+            return pks[0]
+        else:
+            return None
+
+    def _get_uq_pk_constraints(self, connection, type_, table_name, schema=None, **kw):
+        schema = schema or self.default_schema_name
+
+        stmt = text("SELECT tc.constraint_name "
+                "FROM information_schema.table_constraints AS tc "
+                "WHERE tc.table_schema=:schema AND tc.table_name=:table "
+                "AND tc.constraint_type=:type"
+            ).bindparams(schema=schema, table=table_name, type=type_)
+
+        if type_ == 'PRIMARY KEY':
+            col_collection = 'constrained_columns'
+        elif type_ == 'UNIQUE':
+            col_collection = 'column_names'
+        else:
+            assert False
+
+        constraints = {}
+        for const_name, in connection.execute(stmt):
+            tbl, cname = const_name.split(".")
+            constraints[const_name] = {'name': cname, col_collection: []}
+
+        stmt = text("SELECT tc.constraint_name, kcu.column_name "
+                "FROM information_schema.table_constraints AS tc "
+                " JOIN information_schema.key_column_usage AS kcu ON "
+                    "tc.constraint_name=kcu.constraint_name "
+                    "AND tc.constraint_schema=kcu.constraint_schema "
+                    "WHERE tc.table_schema=:schema AND tc.table_name=:table "
+                    "AND tc.constraint_type=:type "
+                    "ORDER BY kcu.ordinal_position"
+                ).bindparams(schema=schema, table=table_name, type=type_)
+
+        for const_name, colname in connection.execute(stmt):
+            constraints[const_name][col_collection].append(colname)
+
+        return list(constraints.values())
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
@@ -517,4 +562,34 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_indexes(self, connection, table_name, schema, **kw):
-        raise NotImplementedError()
+        schema = schema or self.default_schema_name
+
+        # note: foundationdb doubles unique indexes as unique
+        # constraints, the same way as Postgresql does.
+
+        stmt = text("SELECT ix.index_name, ix.is_unique "
+                "FROM information_schema.indexes AS ix "
+                "WHERE ix.table_schema=:schema AND ix.table_name=:table "
+                "AND ix.index_type in ('INDEX', 'UNIQUE')"
+            ).bindparams(schema=schema, table=table_name)
+
+        constraints = {}
+        for const_name, is_unique in connection.execute(stmt):
+            constraints[const_name] = {
+                    'name': const_name, "column_names": [],
+                    'unique': is_unique == 'YES'}
+
+        stmt = text("SELECT ix.index_name, ic.column_name "
+                "FROM information_schema.indexes AS ix "
+                " JOIN information_schema.index_columns AS ic ON "
+                    "ix.index_name=ic.index_name "
+                    "AND ix.table_schema=ic.index_table_schema "
+                    "WHERE ix.table_schema=:schema AND ix.table_name=:table "
+                    "AND ix.index_type in ('INDEX', 'UNIQUE')"
+                    "ORDER BY ic.ordinal_position"
+                ).bindparams(schema=schema, table=table_name)
+
+        for const_name, colname in connection.execute(stmt):
+            constraints[const_name]["column_names"].append(colname)
+
+        return list(constraints.values())

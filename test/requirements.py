@@ -17,7 +17,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def unique_constraint_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def views(self):
@@ -44,7 +44,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def primary_key_constraint_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def foreign_key_constraint_reflection(self):
@@ -52,7 +52,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def index_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def returning(self):
@@ -63,19 +63,20 @@ class Requirements(SuiteRequirements):
     def text_type(self):
         """Target database must support an unbounded Text() "
         "type such as TEXT or CLOB"""
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def empty_strings_text(self):
         """target database can persist/return an empty string with an
         unbounded text."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def unbounded_varchar(self):
         """Target database must support VARCHAR with no length"""
 
+        # foundationdb doesn't seem to support this
         return exclusions.closed()
 
     @property
@@ -125,4 +126,9 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.time() with microsecond objects."""
 
+        return exclusions.closed()
+
+    @property
+    def precision_numerics_many_significant_digits(self):
+        # foundationdb only allows precision up to 31 digits
         return exclusions.closed()
