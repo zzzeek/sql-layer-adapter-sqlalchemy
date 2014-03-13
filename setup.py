@@ -36,8 +36,8 @@ setup(name='sqlalchemy-foundationdb',
       zip_safe=False,
       entry_points={
          'sqlalchemy.dialects': [
-              'sqlalchemy_foundationdb = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
-              'sqlalchemy_foundationdb.psycopg2 = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
+              'foundationdb = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
+              'foundationdb.psycopg2 = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
               ]
         }
 )
