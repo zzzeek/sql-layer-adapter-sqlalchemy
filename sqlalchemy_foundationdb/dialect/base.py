@@ -195,6 +195,7 @@ class FDBTypeCompiler(compiler.GenericTypeCompiler):
 class FDBIdentifierPreparer(compiler.IdentifierPreparer):
 
     reserved_words = RESERVED_WORDS
+    illegal_initial_characters = set(range(0, 10)).union(["_", "$"])
 
 class FDBInspector(reflection.Inspector):
     pass
