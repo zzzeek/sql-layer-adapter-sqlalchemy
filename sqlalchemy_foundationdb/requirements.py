@@ -135,8 +135,9 @@ class Requirements(SuiteRequirements):
 
     @property
     def duplicate_names_in_cursor_description(self):
-        return exclusions.fails_if(lambda: True,
-                            "JSON results don't support repeat keys")
+        # for result sets that don't have nested=True (and none of the
+        # SQLAlchemy suite tests do), we are OK with this.
+        return exclusions.open()
 
     @property
     def percent_schema_names(self):

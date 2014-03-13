@@ -11,7 +11,11 @@ from fdb_sql import psycopg2 as fdb_psycopg2
 
 class FDBPsycopg2ExecutionContext(FDBExecutionContext):
     def create_cursor(self):
-        return self._dbapi_connection.cursor(nested=not self.is_crud)
+        nested = self.execution_options.get('foundationdb_nested', False) or (
+                not self.isddl and self.compiled and
+                self.compiled._foundationdb_nested
+            )
+        return self._dbapi_connection.cursor(nested=nested)
 
 
 class FDBPsycopg2Compiler(FDBCompiler):

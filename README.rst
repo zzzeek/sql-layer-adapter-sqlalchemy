@@ -26,7 +26,7 @@ Connect format is similar to that of a regular Postgresql database::
 
     from sqlalchemy import create_engine
 
-    engine = create_engine("sqlalchemy_foundationdb+psycopg2://@localhost:15432/")
+    engine = create_engine("foundationdb+psycopg2://@localhost:15432/")
 
 The ``Engine`` above will produce connections when the ``Engine.connect``
 method is called.
@@ -35,10 +35,12 @@ Nested Result Sets
 ==================
 
 The dialect introduces a new type called ``NestedResult``, the value of
-which is a new SQLAlchemy ``ResultProxy`` representing a nested result::
+which is a new SQLAlchemy ``ResultProxy`` representing a nested result.
+When invoking SQL as a string, the ``foundationdb_nested`` execution
+option is used to alert the engine to switch into 'nested result' mode::
 
     with engine.begin() as conn:
-        result = conn.execute(
+        result = conn.execution_options(foundationdb_nested=True).execute(
                     "SELECT customer.id, "
                     "(SELECT order.id, order.data "
                     "FROM order "
@@ -100,7 +102,9 @@ Moving up a level, the dialect introduces a new Core construct ``nested``
 which is an extension of SQLAlchemy's "scalar select" construct.   This construct is
 a drop-in replacement for a standard ``select()`` subquery, and is a marker
 intercepted by the FoundationDB dialect indicating that column and typing information about
-a "nested result" should be carried over from statement to result set::
+a "nested result" should be carried over from statement to result set.
+When using nested results with Core or ORM statement constructs, the
+``foundationdb_nested`` execution option is implicitly set::
 
     from sqlalchemy import select
     from sqlalchemy_foundationdb import nested

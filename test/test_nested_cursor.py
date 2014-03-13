@@ -1,7 +1,7 @@
 from sqlalchemy.testing import fixtures, config
-from sqlalchemy.testing.assertions import eq_, is_
+from sqlalchemy.testing.assertions import eq_, is_, assert_raises_message
 from .fixtures import cust_order_item, cust_order_data
-from sqlalchemy import select, type_coerce
+from sqlalchemy import select, type_coerce, exc
 from decimal import Decimal
 from sqlalchemy_foundationdb import nested
 from sqlalchemy.types import TypeDecorator, Integer
@@ -94,4 +94,28 @@ class NestedTest(_Fixture, fixtures.TablesTest):
         eq_(
             list(sub_sub_result),
             [('9.99_processed',), ('19.99_processed',)]
+        )
+
+    def test_nested_text_w_option(self):
+        # a statement that returns a multi-row, nested result.
+        stmt = 'select customer.id, (select "order".id from "order" '\
+                'where customer.id="order".customer_id) as n1 from '\
+                'customer where customer.id=3'
+
+        r = config.db.execution_options(foundationdb_nested=True).execute(stmt)
+        row = r.fetchone()
+        eq_(row['n1'].fetchall(), [(107,), (108,), (109,)])
+
+    def test_nested_text_wo_option(self):
+        # a statement that returns a multi-row, nested result.
+        stmt = 'select customer.id, (select "order".id from "order" '\
+                'where customer.id="order".customer_id) as n1 from '\
+                'customer where customer.id=3'
+
+        # without the option, it runs in "table" row mode and we
+        # get an error.
+        assert_raises_message(
+            exc.DBAPIError,
+            "Subquery returned more than one row",
+            config.db.execute, stmt
         )
