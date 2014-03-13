@@ -132,3 +132,12 @@ class Requirements(SuiteRequirements):
     def precision_numerics_many_significant_digits(self):
         # foundationdb only allows precision up to 31 digits
         return exclusions.closed()
+
+    @property
+    def duplicate_names_in_cursor_description(self):
+        return exclusions.fails_if(lambda: True,
+                            "JSON results don't support repeat keys")
+
+    @property
+    def percent_schema_names(self):
+        return exclusions.closed()

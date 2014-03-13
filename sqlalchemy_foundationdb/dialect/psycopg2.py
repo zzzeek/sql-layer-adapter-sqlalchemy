@@ -4,7 +4,7 @@ driver.
 """
 from __future__ import absolute_import
 
-from .base import FDBDialect, FDBExecutionContext
+from .base import FDBDialect, FDBExecutionContext, FDBCompiler
 
 from fdb_sql import psycopg2 as fdb_psycopg2
 
@@ -14,8 +14,18 @@ class FDBPsycopg2ExecutionContext(FDBExecutionContext):
         return self._dbapi_connection.cursor(nested=not self.is_crud)
 
 
+class FDBPsycopg2Compiler(FDBCompiler):
+    def visit_mod_binary(self, binary, operator, **kw):
+        return self.process(binary.left, **kw) + " %% " + \
+                self.process(binary.right, **kw)
+
+    def post_process_text(self, text):
+        return text.replace('%', '%%')
+
 class FDBPsycopg2Dialect(FDBDialect):
     use_native_unicode = True
+
+    statement_compiler = FDBPsycopg2Compiler
     execution_ctx_cls = FDBPsycopg2ExecutionContext
     driver = 'psycopg2'
 
