@@ -274,7 +274,7 @@ class FDBDialect(default.DefaultDialect):
     supports_sane_rowcount = True
 
     supports_native_enum = False
-    supports_native_boolean = False
+    supports_native_boolean = True
 
     supports_sequences = True
     sequences_optional = True
