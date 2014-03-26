@@ -1,7 +1,8 @@
 *.pyc
 *.swp
 *.orig
-build
+/build/
+/docs/build/output/
 tmp
 dist
 .venv

@@ -43,13 +43,46 @@ class DOUBLE(sqltypes.Float):
 
 
 class NestedResult(sqltypes.TypeEngine):
+    """A SQLAlchemy type representing a 'nested result set' delivered as a
+    column value.
 
+    This datatype is not applied to the actual columns of a table, but is
+    instead used internally for result sets from a SELECT statement,
+    for those columns which correspond to a nested result.
+
+    .. seealso::
+
+        :class:`.nested`
+
+    """
     def foundationdb_result_processor(self, gen_nested_context):
         def process(value):
             return ResultProxy(gen_nested_context(value))
         return process
 
 class nested(expression.ScalarSelect):
+    """Provide a 'nested' subquery.
+
+    :class:`.nested` is a subclass of SQLAlchemy's :class:`sqlalchemy:sqlalchemy.sql.expression.ScalarSelect`
+    class, which represents a SELECT statement that normally returns exactly
+    one row and one column.  However, FoundationDB allows such subqueries
+    to return full result sets.   :class:`.nested` is a SQLAlchemy integration
+    point which specifies such a subquery in a Core SQL expression::
+
+        from sqlalchemy import select
+        from sqlalchemy_foundationdb import nested
+
+        sub_stmt = nested([order]).where(order.c.customer_id
+                                                == customer.c.id).label('o')
+        stmt = select([sub_stmt]).where(customer.c.id == 1)
+
+        result = conn.execute(stmt)
+
+    .. seealso::
+
+        :ref:`core_nested_select`
+
+    """
     __visit_name__ = 'foundationdb_nested'
 
     def __init__(self, stmt):

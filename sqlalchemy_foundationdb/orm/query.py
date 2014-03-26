@@ -19,6 +19,28 @@ class ORMNestedResult(_NestedResult):
         return process
 
 class orm_nested(_nested):
+    """Convert a :class:`sqlalchemy:sqlalchemy.orm.query.Query` into a 'nested subquery'.
+
+    This is the ORM analogue to the :class:`.nested` construct.  E.g.::
+
+        from sqlalchemy_foundationdb import orm
+
+        sess = Session()
+
+        n = orm.orm_nested(sess.query(Order.id, Order).filter(Customer.orders))
+
+        q = sess.query(Customer, n).filter(Customer.id == 1)
+
+        for customer, orders in q:
+            print "customer:", customer.name
+            print "orders:", orders
+
+
+    .. seealso::
+
+        :ref:`orm_explicit_nested`
+
+    """
 
     def __init__(self, query):
         stmt = query.statement
@@ -28,6 +50,28 @@ class orm_nested(_nested):
 
 @loader_option()
 def nestedload(loadopt, attr):
+    """Indicate that the given attribute should be loaded using "nested"
+    loading.
+
+    This function is part of the :class:`sqlalchemy:sqlalchemy.orm.strategy_options.Load`
+    interface and supports
+    both method-chained and standalone operation.
+
+    e.g.::
+
+        for customer in sess.query(Customer).options(orm.nestedload(Customer.orders)):
+            print "customer:", customer.name
+            print "orders:", customer.orders
+
+    .. seealso::
+
+        :ref:`orm_nested_eager_loading`
+
+        :func:`.nestedload_all`
+
+
+    """
+
     return loadopt.set_relationship_strategy(attr, {"lazy": "nested"})
 
 @nestedload._add_unbound_fn
@@ -36,6 +80,25 @@ def nestedload(*keys):
 
 @nestedload._add_unbound_all_fn
 def nestedload_all(*keys):
+    """Multiple-attribute form of :func:`.nestedload`.
+
+    Note that the "all" style of loading is deprecated in SQLAlchemy.
+    Previously, to specify loading for each of a chain of attributes,
+    the "all" option could be used as::
+
+        sess.query(Customer).options(nestedload_all("orders", "items"))
+
+    the new chaining style uses :func:`.nestedload` alone, as in::
+
+        sess.query(Customer).options(nestedload("orders").nestedload("items"))
+
+    .. seealso::
+
+        :ref:`orm_nested_eager_loading`
+
+        :func:`.nestedload`
+
+    """
     return _UnboundLoad._from_keys(_UnboundLoad.nestedload, keys, True, {})
 
 nestedload = nestedload._unbound_fn

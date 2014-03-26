@@ -7,10 +7,21 @@ dialect for the FoundationDB SQL Layer, as well as
 a Core/ORM extension library allowing direct control of FoundationDB SQL nested
 SELECT statements and result sets.
 
-The library requires the ``fdb-sql`` package to be installed, as well as the
-``psycopg2`` database API.
 
-Documentation
-=============
+Contents:
 
-Please see the docs/ folder for documentation.
+.. toctree::
+   :maxdepth: 2
+
+   core
+   orm
+   api
+   changelog
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
