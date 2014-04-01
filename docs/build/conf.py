@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# fdb-sql documentation build configuration file, created by
+# foundationdb-sql documentation build configuration file, created by
 # sphinx-quickstart on Tue Mar 18 13:06:45 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.

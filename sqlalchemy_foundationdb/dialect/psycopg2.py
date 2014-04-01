@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 from .base import FDBDialect, FDBExecutionContext, FDBCompiler
 
-from fdb_sql import psycopg2 as fdb_psycopg2
+from foundationdb_sql import psycopg2 as fdb_psycopg2
 
 
 class FDBPsycopg2ExecutionContext(FDBExecutionContext):

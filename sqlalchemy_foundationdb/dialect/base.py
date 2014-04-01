@@ -5,7 +5,7 @@ from sqlalchemy import sql, exc, util
 from sqlalchemy.engine import default, reflection, ResultProxy
 from sqlalchemy.sql import compiler, expression, text
 from sqlalchemy import types as sqltypes, schema as sa_schema
-from fdb_sql.api import NESTED_CURSOR
+from foundationdb_sql.api import NESTED_CURSOR
 from sqlalchemy.ext.compiler import compiles
 import collections
 

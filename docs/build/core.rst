@@ -11,7 +11,7 @@ Prerequisites / Installation
 
 SQLAlchemy-FoundationDB depends on:
 
-* `fdb-sql <https://github.com/FoundationDB/sql-layer-adapter-dbapi>`_ - this
+* `foundationdb-sql <https://github.com/FoundationDB/sql-layer-adapter-dbapi>`_ - this
   is an extension for the psycopg2 DBAPI, in order to provide nested result support.
 
 * SQLAlchemy 0.9.2 or greater - The FoundationDB dialect relies on various API
@@ -29,7 +29,7 @@ Connecting
 ==========
 
 SQLAlchemy-FoundationDB provides a SQLAlchemy dialect that's made available
-to the :func:`sqlalchemy:sqlalchemy.create_engine` function like any other.   As fdb-sql
+to the :func:`sqlalchemy:sqlalchemy.create_engine` function like any other.   As foundationdb-sql
 is based on psycopg2, the dialect here is also specific to that DBAPI::
 
     from sqlalchemy import create_engine
