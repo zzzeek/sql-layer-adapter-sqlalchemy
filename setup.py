@@ -14,6 +14,7 @@ setup(name='sqlalchemy-foundationdb',
       version=VERSION,
       description="FoundationDB SQL Layer Dialect and ORM Extension for SQLAlchemy",
       long_description=open(readme).read(),
+      url="https://github.com/FoundationDB/sql-layer-adapter-sqlalchemy",
       classifiers=[
       'Development Status :: 4 - Beta',
       'Environment :: Console',
