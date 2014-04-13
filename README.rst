@@ -13,4 +13,5 @@ The library requires the ``foundationdb-sql`` package to be installed, as well a
 Documentation
 =============
 
-Please see the docs/ folder for documentation.
+See https://foundationdb.com/layers/sql/documentation/AppIntegration/SQLAlchemy/dialect/.
+
