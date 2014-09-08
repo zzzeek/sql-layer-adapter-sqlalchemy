@@ -48,10 +48,8 @@ class FDBReflectionTest(fixtures.TablesTest):
         eq_(item_fks[0]['referred_schema'], schema)
         eq_(item_fks[0]['options']['grouping'], True)
 
-    @testing.fails_if("foundationdb", "not yet supported")
     def test_reflect_named_fk_grouping(self):
         self._test_reflect_named_fk_grouping()
 
-    @testing.fails_if("foundationdb", "not yet supported")
     def test_reflect_named_fk_grouping_schema(self):
         self._test_reflect_named_fk_grouping("test_schema")
