@@ -506,8 +506,7 @@ class FDBDialect(default.DefaultDialect):
 
         constraints = {}
         for const_name, in connection.execute(stmt):
-            tbl, cname = const_name.split(".")
-            constraints[const_name] = {'name': cname, col_collection: []}
+            constraints[const_name] = {'name': const_name, col_collection: []}
 
         stmt = text("SELECT tc.constraint_name, kcu.column_name "
                 "FROM information_schema.table_constraints AS tc "
