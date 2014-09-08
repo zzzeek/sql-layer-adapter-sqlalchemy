@@ -44,7 +44,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def primary_key_constraint_reflection(self):
-        return exclusions.open()
+        return exclusions.closed()
 
     @property
     def foreign_key_constraint_reflection(self):
