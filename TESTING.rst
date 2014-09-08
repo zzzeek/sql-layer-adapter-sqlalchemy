@@ -1,7 +1,7 @@
 Running the unit tests
 ----------------------
 
-You can run the tests for the sqlalchemy adapter by running::
+You can run the tests for the sqlalchemy adapter by running (note: this uses the default schema, so make sure that schema is empty)::
 
   python setup.py test
 
