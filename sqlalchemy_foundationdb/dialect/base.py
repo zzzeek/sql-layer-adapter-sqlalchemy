@@ -385,6 +385,14 @@ class FDBDialect(default.DefaultDialect):
                     "information_schema.server_instance_summary")
         return ver
 
+    def _get_server_version_number(self, connection):
+        ver = self._get_server_version_info(connection)
+        m = re.search('(\d+)\.(\d+)\.(\d+)', ver)
+        if (m):
+            return (int(m.group(1))*100 + int(m.group(2)))*100 + int(m.group(3))
+        else:
+            raise Exception("Invalid version returned from server: " + ver)
+
     @reflection.cache
     def get_schema_names(self, connection, **kw):
         cursor = connection.execute(
@@ -506,6 +514,8 @@ class FDBDialect(default.DefaultDialect):
 
         constraints = {}
         for const_name, in connection.execute(stmt):
+            if (self._get_server_version_number(connection) <= 10905):
+                const_name = const_name.split('.')[1]
             constraints[const_name] = {'name': const_name, col_collection: []}
 
         stmt = text("SELECT tc.constraint_name, kcu.column_name "
