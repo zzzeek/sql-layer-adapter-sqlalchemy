@@ -18,3 +18,5 @@ To run SQLAlchemy's global tests with the fdbsql adapter, run:
 
     pip install pytest mock sqlalchemy-foundationdb
     py.test --dburi foundationdb+psycopg2://@localhost:15432/test
+
+Currently a bunch of tests fail when run with everything else due to DROP TABLE issues.
