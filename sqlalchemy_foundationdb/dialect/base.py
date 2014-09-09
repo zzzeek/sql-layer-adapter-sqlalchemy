@@ -352,7 +352,7 @@ class FDBDialect(default.DefaultDialect):
         return None
 
     def _get_default_schema_name(self, connection):
-        return connection.scalar("select CURRENT_USER")
+        return connection.scalar("select CURRENT_SCHEMA")
 
     def has_schema(self, connection, schema):
         raise NotImplementedError("has_schema")
