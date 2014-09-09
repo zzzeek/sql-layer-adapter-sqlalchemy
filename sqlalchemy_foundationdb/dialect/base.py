@@ -515,8 +515,10 @@ class FDBDialect(default.DefaultDialect):
         constraints = {}
         for const_name, in connection.execute(stmt):
             if (self._get_server_version_number(connection) <= 10905):
-                const_name = const_name.split('.')[1]
-            constraints[const_name] = {'name': const_name, col_collection: []}
+                cname = const_name.split('.')[1]
+            else:
+                cname = const_name
+            constraints[const_name] = {'name': cname, col_collection: []}
 
         stmt = text("SELECT tc.constraint_name, kcu.column_name "
                 "FROM information_schema.table_constraints AS tc "
