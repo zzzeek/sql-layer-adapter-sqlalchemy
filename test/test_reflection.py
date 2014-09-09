@@ -2,6 +2,7 @@ from sqlalchemy.testing import fixtures
 from sqlalchemy.schema import AddConstraint, CreateTable
 from sqlalchemy import inspect
 from sqlalchemy.testing.assertions import eq_
+from sqlalchemy.testing.exclusions import SpecPredicate
 from .fixtures import cust_order_item
 from sqlalchemy import testing
 
@@ -48,10 +49,10 @@ class FDBReflectionTest(fixtures.TablesTest):
         eq_(item_fks[0]['referred_schema'], schema)
         eq_(item_fks[0]['options']['grouping'], True)
 
-    @testing.fails_if("foundationdb", "not yet supported")
+    @testing.fails_if(SpecPredicate('foundationdb', '<=', (1,9,5), 'not supported in 1.9.5'))
     def test_reflect_named_fk_grouping(self):
         self._test_reflect_named_fk_grouping()
 
-    @testing.fails_if("foundationdb", "not yet supported")
+    @testing.fails_if(SpecPredicate('foundationdb', '<=', (1,9,5), 'not supported in 1.9.5'))
     def test_reflect_named_fk_grouping_schema(self):
         self._test_reflect_named_fk_grouping("test_schema")

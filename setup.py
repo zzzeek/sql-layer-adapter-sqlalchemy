@@ -32,7 +32,7 @@ setup(name='sqlalchemy-foundationdb',
       packages=find_packages('.', exclude=['examples*', 'test*']),
       install_requires=['foundationdb_sql >= 0.9dev', 'sqlalchemy >= 0.9.2'],
       include_package_data=True,
-      tests_require=['pytest >= 2.5.2'],
+      tests_require=['pytest >= 2.5.2', 'mock >= 1.0.1'],
       test_suite="pytest.main",
       zip_safe=False,
       entry_points={

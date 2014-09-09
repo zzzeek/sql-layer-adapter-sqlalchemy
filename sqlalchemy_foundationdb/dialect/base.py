@@ -352,7 +352,7 @@ class FDBDialect(default.DefaultDialect):
         return None
 
     def _get_default_schema_name(self, connection):
-        return connection.scalar("select CURRENT_USER")
+        return connection.scalar("select CURRENT_SCHEMA")
 
     def has_schema(self, connection, schema):
         raise NotImplementedError("has_schema")
@@ -383,7 +383,11 @@ class FDBDialect(default.DefaultDialect):
     def _get_server_version_info(self, connection):
         ver = connection.scalar("select server_version from "
                     "information_schema.server_instance_summary")
-        return ver
+        m = re.search('(\d+)\.(\d+)\.(\d+)', ver)
+        if (m):
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        else:
+            raise Exception("Invalid version returned from server: " + ver)
 
     @reflection.cache
     def get_schema_names(self, connection, **kw):
@@ -506,7 +510,10 @@ class FDBDialect(default.DefaultDialect):
 
         constraints = {}
         for const_name, in connection.execute(stmt):
-            tbl, cname = const_name.split(".")
+            if (self._get_server_version_info(connection) <= (1,9,5)):
+                cname = const_name.split('.')[1]
+            else:
+                cname = const_name
             constraints[const_name] = {'name': cname, col_collection: []}
 
         stmt = text("SELECT tc.constraint_name, kcu.column_name "
