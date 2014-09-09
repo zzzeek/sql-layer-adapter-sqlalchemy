@@ -383,13 +383,9 @@ class FDBDialect(default.DefaultDialect):
     def _get_server_version_info(self, connection):
         ver = connection.scalar("select server_version from "
                     "information_schema.server_instance_summary")
-        return ver
-
-    def _get_server_version_number(self, connection):
-        ver = self._get_server_version_info(connection)
         m = re.search('(\d+)\.(\d+)\.(\d+)', ver)
         if (m):
-            return (int(m.group(1))*100 + int(m.group(2)))*100 + int(m.group(3))
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
         else:
             raise Exception("Invalid version returned from server: " + ver)
 
@@ -514,7 +510,7 @@ class FDBDialect(default.DefaultDialect):
 
         constraints = {}
         for const_name, in connection.execute(stmt):
-            if (self._get_server_version_number(connection) <= 10905):
+            if (self._get_server_version_info(connection) <= (1,9,5)):
                 cname = const_name.split('.')[1]
             else:
                 cname = const_name

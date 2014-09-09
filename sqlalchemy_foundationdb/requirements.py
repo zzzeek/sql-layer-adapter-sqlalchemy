@@ -1,6 +1,13 @@
 from sqlalchemy.testing.requirements import SuiteRequirements
 
 from sqlalchemy.testing import exclusions
+from sqlalchemy.testing.exclusions import \
+    skip_if, \
+    SpecPredicate
+
+
+def exclude(db, op, spec, description=None):
+    return SpecPredicate(db, op, spec, description=description)
 
 class Requirements(SuiteRequirements):
     @property
@@ -44,11 +51,15 @@ class Requirements(SuiteRequirements):
 
     @property
     def reflects_pk_names(self):
-        return exclusions.open()
+        return skip_if([
+            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
+        ])
 
     @property
     def primary_key_constraint_reflection(self):
-        return exclusions.open()
+        return skip_if([
+            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
+        ])
 
     @property
     def foreign_key_constraint_reflection(self):
