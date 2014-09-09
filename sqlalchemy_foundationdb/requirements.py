@@ -43,8 +43,12 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
+    def reflects_pk_names(self):
+        return exclusions.open()
+
+    @property
     def primary_key_constraint_reflection(self):
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def foreign_key_constraint_reflection(self):
