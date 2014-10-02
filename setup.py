@@ -1,24 +1,19 @@
-import os
-import re
-
 from setuptools import setup, find_packages
+from pkg_resources import resource_string
 
-v = open(os.path.join(os.path.dirname(__file__), 'sqlalchemy_foundationdb', '__init__.py'))
-VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
-v.close()
-
-readme = os.path.join(os.path.dirname(__file__), 'README.rst')
-
+VERSION_STR = __import__('sqlalchemy_foundationdb').__version__
+README_STR = resource_string(__name__, 'README.rst')
 
 setup(name='sqlalchemy-foundationdb',
-      version=VERSION,
+      version=VERSION_STR,
       description="FoundationDB SQL Layer Dialect and ORM Extension for SQLAlchemy",
-      long_description=open(readme).read(),
+      long_description=README_STR,
       url="https://github.com/FoundationDB/sql-layer-adapter-sqlalchemy",
       classifiers=[
       'Development Status :: 4 - Beta',
       'Environment :: Console',
       'Intended Audience :: Developers',
+      'License :: OSI Approved :: MIT License',
       'Programming Language :: Python',
       'Programming Language :: Python :: 3',
       'Programming Language :: Python :: Implementation :: CPython',
@@ -28,13 +23,15 @@ setup(name='sqlalchemy-foundationdb',
       keywords='FoundationDB SQLAlchemy',
       author='Mike Bayer',
       author_email='mike@zzzcomputing.com',
+      maintainer= 'FoundationDB',
+      maintainer_email='distribution@foundationdb.com',
       license='MIT',
-      packages=find_packages('.', exclude=['examples*', 'test*']),
+      packages=find_packages(exclude=['test']),
       install_requires=['foundationdb_sql >= 0.9dev', 'sqlalchemy >= 0.9.2'],
       include_package_data=True,
       tests_require=['pytest >= 2.5.2', 'mock >= 1.0.1'],
       test_suite="pytest.main",
-      zip_safe=False,
+      zip_safe=True,
       entry_points={
          'sqlalchemy.dialects': [
               'foundationdb = sqlalchemy_foundationdb.dialect.psycopg2:FDBPsycopg2Dialect',
