@@ -2,7 +2,14 @@
 Changelog
 ==========
 .. changelog::
-    :version: 0.9.1
+    :version: 0.9.3
+
+    .. change::
+      :tags: general
+
+      Do not import in setup.py.
+
+    :version: 0.9.2
 
     .. change::
       :tags: general
