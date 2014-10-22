@@ -131,12 +131,12 @@ class FDBCompiler(compiler.SQLCompiler):
     def _foundationdb_nested(self):
         return {}
 
-    def limit_clause(self, select):
+    def limit_clause(self, select, **kwargs):
         text = ""
         if select._limit is not None:
-            text += " \n LIMIT " + self.process(sql.literal(select._limit))
+            text += " \n LIMIT " + self.process(sql.literal(select._limit), **kwargs)
         if select._offset is not None:
-            text += " OFFSET " + self.process(sql.literal(select._offset))
+            text += " OFFSET " + self.process(sql.literal(select._offset), **kwargs)
             if select._limit is None:
                 text += " ROWS"  # OFFSET n ROW[S]
         return text
