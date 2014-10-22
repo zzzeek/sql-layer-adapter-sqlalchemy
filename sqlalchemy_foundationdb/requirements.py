@@ -163,3 +163,11 @@ class Requirements(SuiteRequirements):
     @property
     def percent_schema_names(self):
         return exclusions.closed()
+
+    @property
+    def bound_limit_offset(self):
+        """target database can render LIMIT and/or OFFSET using a bound
+        parameter
+        """
+
+        return exclusions.closed()
