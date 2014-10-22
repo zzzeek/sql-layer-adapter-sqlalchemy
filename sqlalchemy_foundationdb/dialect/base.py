@@ -558,9 +558,7 @@ class FDBDialect(default.DefaultDialect):
                 fks[conname] = {
                     'name': conname,
                     'constrained_columns': [],
-                    'referred_schema': referred_schema
-                                    if referred_schema != self.default_schema_name
-                                    else None,
+                    'referred_schema': referred_schema,
                     'referred_table': referred_table,
                     'referred_columns': [],
                     'options': {
