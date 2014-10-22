@@ -564,7 +564,7 @@ class FDBDialect(default.DefaultDialect):
                     'referred_table': referred_table,
                     'referred_columns': [],
                     'options': {
-                        'grouping': grouping
+                        'foundationdb_grouping': grouping
                         #'onupdate': onupdate,
                         #'ondelete': ondelete,
                     }
