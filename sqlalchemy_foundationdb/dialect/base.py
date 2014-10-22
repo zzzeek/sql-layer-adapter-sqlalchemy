@@ -329,9 +329,6 @@ class FDBDialect(default.DefaultDialect):
     inspector = FDBInspector
     isolation_level = None
 
-    supports_empty_insert = False
-    supports_default_values = False
-
     dbapi_type_map = {
         NESTED_CURSOR: NestedResult()
     }
