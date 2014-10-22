@@ -237,7 +237,7 @@ class FDBInspector(reflection.Inspector):
 
 class FDBExecutionContext(default.DefaultExecutionContext):
     def get_result_processor(self, type_, colname, coltype):
-        if self.compiled and type_ in self.compiled._foundationdb_nested:
+        if self.compiled and hasattr(self.compiled, '_foundationdb_nested') and type_ in self.compiled._foundationdb_nested:
             class NestedContext(object):
                 result_map = self.compiled._foundationdb_nested[type_]
                 dialect = self.dialect
