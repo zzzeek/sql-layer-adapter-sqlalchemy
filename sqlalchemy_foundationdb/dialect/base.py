@@ -12,7 +12,7 @@ import collections
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
         CHAR, TEXT, FLOAT, NUMERIC, DATETIME, VARBINARY, \
         DATE, BOOLEAN, REAL, TIMESTAMP, DECIMAL, \
-        TIME
+        TIME, BLOB
 
 RESERVED_WORDS = set(
     ["all", "analyse", "analyze", "and", "any", "array", "as", "asc",
@@ -101,8 +101,10 @@ colspecs = {
 
 ischema_names = {
     "BIGINT": BIGINT,
+    "BLOB": BLOB,
     "CHAR": CHAR,
     "DATETIME": DATETIME,
+    "DATE": DATE,
     "DOUBLE": DOUBLE,
     "INT": INTEGER,
     "DECIMAL": DECIMAL,
