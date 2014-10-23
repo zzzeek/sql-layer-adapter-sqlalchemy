@@ -15,6 +15,12 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
+    def check_constraints(self):
+        """Target database must support check constraints."""
+
+        return exclusions.closed()
+
+    @property
     def self_referential_foreign_keys(self):
         return exclusions.open()
 
