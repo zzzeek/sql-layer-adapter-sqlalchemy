@@ -38,6 +38,7 @@ _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
 
 
 
+# TODO: this could probably be replaced with the builtin NUMERIC
 class DOUBLE(sqltypes.Float):
     __visit_name__ = 'DOUBLE'
 
