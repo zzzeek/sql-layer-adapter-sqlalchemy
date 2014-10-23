@@ -33,6 +33,12 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
+    def two_phase_transactions(self):
+        """Target database must support two-phase transactions."""
+
+        return exclusions.closed()
+
+    @property
     def views(self):
         return exclusions.open()
 
