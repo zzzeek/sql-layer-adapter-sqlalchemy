@@ -452,7 +452,7 @@ class FDBDialect(default.DefaultDialect):
             scale, default, is_ident, ident_start, ident_increment in connection.execute(stmt):
 
             try:
-                coltype = ischema_names[type_]
+                coltype = self.ischema_names[type_]
             except KeyError:
                 util.warn("Did not recognize type '%s' of column '%s'" %
                       (type_, cname))
