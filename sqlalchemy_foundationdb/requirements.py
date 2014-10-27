@@ -183,6 +183,10 @@ class Requirements(SuiteRequirements):
         return exclusions.closed()
 
     @property
+    def order_by_label_with_expression(self):
+        return exclusions.closed()
+
+    @property
     def bound_limit_offset(self):
         """target database can render LIMIT and/or OFFSET using a bound
         parameter
