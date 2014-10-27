@@ -61,6 +61,12 @@ class Requirements(SuiteRequirements):
         return exclusions.closed()
 
     @property
+    def row_triggers(self):
+        """Target must support standard statement-running EACH ROW triggers."""
+
+        return exclusions.closed()
+
+    @property
     def schemas(self):
         """Target database must support external schemas, and have one
         named 'test_schema'."""
