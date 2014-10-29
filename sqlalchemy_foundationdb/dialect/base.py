@@ -38,7 +38,6 @@ _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
 
 
 
-# TODO: this could probably be replaced with the builtin NUMERIC
 class DOUBLE(sqltypes.Float):
     __visit_name__ = 'DOUBLE'
 
@@ -227,6 +226,14 @@ class FDBDDLCompiler(compiler.DDLCompiler):
 class FDBTypeCompiler(compiler.GenericTypeCompiler):
     def visit_DOUBLE(self, type_):
         return "DOUBLE"
+
+    def visit_VARCHAR(self, type_):
+        if type_.length:
+            return super(FDBTypeCompiler, self).visit_VARCHAR(type_)
+        else:
+            raise exc.CompileError(
+                "VARCHAR requires a length on dialect %s" %
+                self.dialect.name)
 
 class FDBIdentifierPreparer(compiler.IdentifierPreparer):
 
