@@ -61,10 +61,7 @@ class Requirements(SuiteRequirements):
         """target database must support ON UPDATE..CASCADE behavior in
         foreign keys."""
 
-        return skip_if(
-                    ['sqlite', 'oracle'],
-                    'target backend %(doesnt_support)s ON UPDATE CASCADE'
-                )
+        return exclusions.open()
 
     @property
     def non_updating_cascade(self):
@@ -77,8 +74,10 @@ class Requirements(SuiteRequirements):
     @property
     def deferrable_fks(self):
         """target database must support deferrable fks"""
-
-        return only_on(['oracle'])
+        # OK, this is kind of weird, on the main branch it says only open for oracle
+        # and test_naturalpks breaks if you have on_update_cascade and deferrable_fks
+        # enabled, because of the _backend_specific_fk_args method
+        return exclusions.closed()
 
 
     @property
