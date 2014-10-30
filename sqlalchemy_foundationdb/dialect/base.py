@@ -15,22 +15,40 @@ from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
         TIME, BLOB
 
 RESERVED_WORDS = set(
-    ["all", "analyse", "analyze", "and", "any", "array", "as", "asc",
-    "asymmetric", "both", "case", "cast", "check", "collate", "column",
-    "constraint", "create", "current_catalog", "current_date",
-    "current_role", "current_time", "current_timestamp", "current_user",
-    "default", "deferrable", "desc", "distinct", "do", "else", "end",
-    "except", "false", "fetch", "for", "foreign", "from", "grant", "group",
-    "having", "in", "initially", "intersect", "into", "leading", "limit",
-    "localtime", "localtimestamp", "new", "not", "null", "off", "offset",
-    "old", "on", "only", "or", "order", "placing", "primary", "references",
-    "returning", "select", "session_user", "some", "symmetric", "table",
-    "then", "to", "trailing", "true", "union", "unique", "user", "using",
-    "variadic", "when", "where", "window", "with", "authorization",
-    "between", "binary", "cross", "current_schema", "freeze", "full",
-    "ilike", "inner", "is", "isnull", "join", "left", "like", "natural",
-    "notnull", "outer", "over", "overlaps", "right", "similar", "verbose",
-    "values", "max"
+    [
+        # sql92 reserved keywords
+        "add", "all", "allocate", "alter", "and", "any", "are", "as", "at",
+        "authorization", "avg", "begin", "between", "bit", "both", "by",
+        "cascaded", "case", "cast", "char", "character_length", "char_length",
+        "check", "close", "collate", "column", "commit", "connect",
+        "connection", "constraint", "continue", "convert", "corresponding",
+        "create", "cross", "current", "current_date", "current_time",
+        "current_timestamp", "current_user", "cursor", "deallocate", "dec",
+        "decimal", "declare", "_default", "delete", "describe", "disconnect",
+        "distinct", "double", "drop", "else", "end", "endexec", "escape",
+        "except", "exec", "execute", "exists", "external", "false", "fetch",
+        "float", "for", "foreign", "from", "full", "function", "get",
+        "get_current_connection", "global", "grant", "group", "group_concat",
+        "having", "hour", "identity", "immediate", "in", "index", "indicator",
+        "inner", "inout", "input", "insensitive", "insert", "int", "integer",
+        "intersect", "interval", "into", "is", "join", "leading", "left",
+        "like", "limit", "lower", "match", "max", "min", "minute", "national",
+        "natural", "nchar", "nvarchar", "next", "no", "none", "not", "null",
+        "nullif", "numeric", "octet_length", "of", "on", "only", "open", "or",
+        "order", "out", "outer", "output", "overlaps", "partition", "prepare",
+        "primary", "procedure", "public", "real", "references", "restrict",
+        "returning", "revoke", "right", "rollback", "rows", "schema", "scroll",
+        "second", "select", "session_user", "set", "smallint", "some", "sql",
+        "sqlcode", "sqlerror", "sqlstate", "sql_cache", "sql_no_cache",
+        "straight_join", "substring", "sum", "system_user", "table",
+        "timezone_hour", "timezone_minute", "to", "trailing", "translate",
+        "translation", "true", "union", "unique", "unknown", "update", "upper",
+        "user", "using", "values", "varchar", "varying", "whenever", "where",
+        "with", "year"
+        # non-sql92 reserved keywords
+        "boolean", "call", "current_role", "current_schema", "explain",
+        "grouping", "ltrim", "rtrim", "trim", "substr", "xml", "xmlparse",
+        "xmlserialize", "xmlexists", "xmlquery", "z_order_lat_lon"
     ])
 
 _DECIMAL_TYPES = (1231, 1700)
