@@ -180,6 +180,8 @@ class FDBCompiler(compiler.SQLCompiler):
 
         return 'RETURNING ' + ', '.join(columns)
 
+    def for_update_clause(self, select, **kw):
+        return ""
 
 class FDBDDLCompiler(compiler.DDLCompiler):
     def get_column_specification(self, column, **kwargs):
