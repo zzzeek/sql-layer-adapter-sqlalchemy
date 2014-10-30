@@ -10,7 +10,7 @@ from sqlalchemy.ext.compiler import compiles
 import collections
 
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
-        CHAR, TEXT, FLOAT, NUMERIC, DATETIME, VARBINARY, \
+        CHAR, FLOAT, NUMERIC, DATETIME, VARBINARY, \
         DATE, BOOLEAN, REAL, TIMESTAMP, DECIMAL, \
         TIME, BLOB
 
@@ -41,6 +41,12 @@ _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
 class DOUBLE(sqltypes.Float):
     __visit_name__ = 'DOUBLE'
 
+class TEXT(sqltypes.Text):
+    """FoundationDB TEXT type. Always has a length of 65535"""
+    __visit_name__ = 'TEXT'
+
+    def __init__(self, length=None, **kw):
+        super(TEXT, self).__init__(length=None, **kw)
 
 class NestedResult(sqltypes.TypeEngine):
     """A SQLAlchemy type representing a 'nested result set' delivered as a
