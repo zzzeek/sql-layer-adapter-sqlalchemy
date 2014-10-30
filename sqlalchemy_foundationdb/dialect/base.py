@@ -29,7 +29,8 @@ RESERVED_WORDS = set(
     "variadic", "when", "where", "window", "with", "authorization",
     "between", "binary", "cross", "current_schema", "freeze", "full",
     "ilike", "inner", "is", "isnull", "join", "left", "like", "natural",
-    "notnull", "outer", "over", "overlaps", "right", "similar", "verbose"
+    "notnull", "outer", "over", "overlaps", "right", "similar", "verbose",
+    "values", "max"
     ])
 
 _DECIMAL_TYPES = (1231, 1700)
