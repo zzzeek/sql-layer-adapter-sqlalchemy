@@ -120,6 +120,11 @@ class Requirements(SuiteRequirements):
             )
 
     @property
+    def temporary_table(self):
+        """Target database must support CREATE TEMPORARY TABLE"""
+        return exclusions.closed()
+
+    @property
     def reflectable_autoincrement(self):
         """Target database must support tables that can automatically generate
         PKs assuming they were reflected.
