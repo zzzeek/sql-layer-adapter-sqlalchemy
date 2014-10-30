@@ -226,9 +226,9 @@ class FDBDDLCompiler(compiler.DDLCompiler):
             ', '.join(preparer.quote(f.column.name)
                       for f in constraint._elements.values())
         )
-        #text += self.define_constraint_match(constraint)
-        #text += self.define_constraint_cascades(constraint)
-        #text += self.define_constraint_deferrability(constraint)
+        text += self.define_constraint_match(constraint)
+        text += self.define_constraint_cascades(constraint)
+        text += self.define_constraint_deferrability(constraint)
         return text
 
     def visit_create_sequence(self, create):
