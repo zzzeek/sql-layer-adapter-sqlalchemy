@@ -27,7 +27,7 @@ class FDBReflectionTest(fixtures.TablesTest):
         eq_(order_fks[0]['referred_table'], 'customer')
         eq_(order_fks[0]['constrained_columns'], ['customer_id'])
         eq_(order_fks[0]['referred_schema'], schema)
-        eq_(order_fks[0]['options']['grouping'], True)
+        eq_(order_fks[0]['options']['foundationdb_grouping'], True)
 
 
     def test_reflect_unnamed_fk_grouping(self):
@@ -47,7 +47,7 @@ class FDBReflectionTest(fixtures.TablesTest):
         eq_(item_fks[0]['referred_table'], 'order')
         eq_(item_fks[0]['constrained_columns'], ['order_id'])
         eq_(item_fks[0]['referred_schema'], schema)
-        eq_(item_fks[0]['options']['grouping'], True)
+        eq_(item_fks[0]['options']['foundationdb_grouping'], True)
 
     @testing.fails_if(SpecPredicate('foundationdb', '<=', (1,9,5), 'not supported in 1.9.5'))
     def test_reflect_named_fk_grouping(self):
