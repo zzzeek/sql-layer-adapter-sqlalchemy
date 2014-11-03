@@ -14,8 +14,7 @@ from sqlalchemy.testing.exclusions import \
      succeeds_if,\
      SpecPredicate,\
      against,\
-     LambdaPredicate,\
-     requires_tag
+     LambdaPredicate
 
 def exclude(db, op, spec, description=None):
     return SpecPredicate(db, op, spec, description=description)
