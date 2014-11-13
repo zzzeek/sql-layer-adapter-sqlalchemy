@@ -567,8 +567,6 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
-        schema = schema or self.default_schema_name
-
         fks = {}
         for grouping in False, True:
             stmt = text("SELECT rc.constraint_name, rfnced.table_schema, "
@@ -587,7 +585,7 @@ class FDBDialect(default.DefaultDialect):
                             "constraint_"
                                 if not grouping else "",
                         )
-                ).bindparams(schema=schema, table=table_name)
+                ).bindparams(schema=schema or self.default_schema_name, table=table_name)
 
             for conname, referred_schema, referred_table in connection.execute(stmt):
                 fks[conname] = {
@@ -595,7 +593,7 @@ class FDBDialect(default.DefaultDialect):
                     'constrained_columns': [],
                     'referred_schema': referred_schema
                                     if referred_schema != self.default_schema_name
-                                    else None,
+                                    else schema,
                     'referred_table': referred_table,
                     'referred_columns': [],
                     'options': {
@@ -632,7 +630,6 @@ class FDBDialect(default.DefaultDialect):
                 fk = fks[cname]
                 fk['constrained_columns'].append(lclname)
                 fk['referred_columns'].append(rmtname)
-
         return list(fks.values())
 
     @reflection.cache
