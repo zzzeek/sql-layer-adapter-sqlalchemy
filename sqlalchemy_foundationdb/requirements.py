@@ -118,6 +118,15 @@ class Requirements(SuiteRequirements):
             )
 
     @property
+    def temp_table_reflection(self):
+        return self.temporary_table
+
+    @property
+    def temp_table_names(self):
+        """target dialect supports listing of temporary table names"""
+        return self.temporary_table
+
+    @property
     def temporary_table(self):
         """Target database must support CREATE TEMPORARY TABLE"""
         return exclusions.closed()
