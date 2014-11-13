@@ -623,7 +623,7 @@ class FDBDialect(default.DefaultDialect):
                             "constraint_"
                                 if not grouping else "",
                         )
-                    ).bindparams(schema=schema, table=table_name)
+                    ).bindparams(schema=schema or self.default_schema_name, table=table_name)
 
 
             for cname, lclname, rmtname in connection.execute(stmt):
