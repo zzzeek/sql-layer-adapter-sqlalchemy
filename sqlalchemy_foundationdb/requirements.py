@@ -58,8 +58,7 @@ class Requirements(SuiteRequirements):
     def non_updating_cascade(self):
         """target database must *not* support ON UPDATE..CASCADE behavior in
         foreign keys."""
-
-        return exclusions.closed()
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def deferrable_fks(self):
@@ -239,7 +238,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def unique_constraint_reflection(self):
-        return exclusions.closed()
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def update_nowait(self):
@@ -342,7 +341,7 @@ class Requirements(SuiteRequirements):
     def dbapi_lastrowid(self):
         """"target backend includes a 'lastrowid' accessor on the DBAPI
         cursor object."""
-        return exclusions.open()
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def sane_multi_rowcount(self):
@@ -354,13 +353,12 @@ class Requirements(SuiteRequirements):
     @property
     def nullsordering(self):
         """Target backends that support nulls ordering."""
-        return exclusions.closed()
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def reflects_pk_names(self):
         """Target driver reflects the name of primary key constraints."""
-
-        return exclusions.closed()
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def datetime_literals(self):
@@ -368,8 +366,7 @@ class Requirements(SuiteRequirements):
         literal string, e.g. via the TypeEngine.literal_processor() method.
 
         """
-
-        return exclusions.open()
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def datetime(self):
