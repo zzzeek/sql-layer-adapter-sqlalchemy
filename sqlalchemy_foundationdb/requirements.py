@@ -342,7 +342,7 @@ class Requirements(SuiteRequirements):
     def dbapi_lastrowid(self):
         """"target backend includes a 'lastrowid' accessor on the DBAPI
         cursor object."""
-        return exclusions.open()
+        return exclusions.closed()
 
     @property
     def sane_multi_rowcount(self):
