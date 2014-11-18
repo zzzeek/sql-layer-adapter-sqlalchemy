@@ -342,7 +342,7 @@ class Requirements(SuiteRequirements):
     def dbapi_lastrowid(self):
         """"target backend includes a 'lastrowid' accessor on the DBAPI
         cursor object."""
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def sane_multi_rowcount(self):
@@ -369,7 +369,7 @@ class Requirements(SuiteRequirements):
 
         """
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def datetime(self):
@@ -390,7 +390,7 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.datetime() objects with historic (pre 1900) values."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def date(self):
@@ -411,7 +411,7 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.datetime() objects with historic (pre 1900) values."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def time(self):
