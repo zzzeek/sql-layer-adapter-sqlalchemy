@@ -1,3 +1,4 @@
+import sqlalchemy as sa
 from sqlalchemy.testing import fixtures
 from sqlalchemy.schema import AddConstraint, CreateTable
 from sqlalchemy import inspect
@@ -56,3 +57,32 @@ class FDBReflectionTest(fixtures.TablesTest):
     @testing.fails_if(SpecPredicate('foundationdb', '<=', (1,9,5), 'not supported in 1.9.5'))
     def test_reflect_named_fk_grouping_schema(self):
         self._test_reflect_named_fk_grouping("test_schema")
+
+    def test_fk_options(self):
+        """test that foreign key reflection includes options (on
+        backends with {dialect}.get_foreign_keys() support)"""
+
+        test_attrs = ('match', 'onupdate', 'ondelete')
+        addresses_user_id_fkey = sa.ForeignKey(
+            'users.id',
+            name = 'addresses_user_id_fkey',
+            match='SIMPLE',
+            onupdate='CASCADE',
+            ondelete='CASCADE',
+        )
+
+        meta = self.metadata
+        sa.Table('users', meta,
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('name', sa.String(30)))
+        sa.Table('addresses', meta,
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('user_id', sa.Integer, addresses_user_id_fkey))
+        meta.create_all()
+
+        meta2 = sa.MetaData()
+        meta2.reflect(testing.db)
+        for fk in meta2.tables['addresses'].foreign_keys:
+            ref = addresses_user_id_fkey
+            for attr in test_attrs:
+                eq_(getattr(fk, attr), getattr(ref, attr))

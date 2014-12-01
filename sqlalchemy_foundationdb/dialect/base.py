@@ -570,7 +570,7 @@ class FDBDialect(default.DefaultDialect):
         fks = {}
         for grouping in False, True:
             stmt = text("SELECT rc.constraint_name, rfnced.table_schema, "
-                            "rfnced.table_name "
+                            "rfnced.table_name %s"
                     "FROM information_schema.table_constraints AS tc "
                     "JOIN information_schema.%s AS rc "
                         "ON tc.constraint_name=rc.constraint_name "
@@ -580,6 +580,8 @@ class FDBDialect(default.DefaultDialect):
                     "rc.unique_constraint_name=rfnced.constraint_name "
                     "WHERE tc.table_schema=:schema AND tc.table_name=:table "
                     % (
+                            ", rc.match_option, rc.update_rule, rc.delete_rule "
+                                if not grouping else ", NULL, NULL, NULL ",
                             "referential_constraints"
                                 if not grouping else "grouping_constraints",
                             "constraint_"
@@ -587,7 +589,7 @@ class FDBDialect(default.DefaultDialect):
                         )
                 ).bindparams(schema=schema or self.default_schema_name, table=table_name)
 
-            for conname, referred_schema, referred_table in connection.execute(stmt):
+            for conname, referred_schema, referred_table, match, onupdate, ondelete in connection.execute(stmt):
                 fks[conname] = {
                     'name': conname,
                     'constrained_columns': [],
@@ -597,9 +599,10 @@ class FDBDialect(default.DefaultDialect):
                     'referred_table': referred_table,
                     'referred_columns': [],
                     'options': {
-                        'foundationdb_grouping': grouping
-                        #'onupdate': onupdate,
-                        #'ondelete': ondelete,
+                        'foundationdb_grouping': grouping,
+                        'match': match,
+                        'onupdate': onupdate,
+                        'ondelete': ondelete,
                     }
                 }
 
