@@ -10,26 +10,45 @@ from sqlalchemy.ext.compiler import compiles
 import collections
 
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
-        CHAR, TEXT, FLOAT, NUMERIC, DATETIME, VARBINARY, \
+        CHAR, FLOAT, NUMERIC, DATETIME, VARBINARY, \
         DATE, BOOLEAN, REAL, TIMESTAMP, DECIMAL, \
-        TIME
+        TIME, BLOB
 
 RESERVED_WORDS = set(
-    ["all", "analyse", "analyze", "and", "any", "array", "as", "asc",
-    "asymmetric", "both", "case", "cast", "check", "collate", "column",
-    "constraint", "create", "current_catalog", "current_date",
-    "current_role", "current_time", "current_timestamp", "current_user",
-    "default", "deferrable", "desc", "distinct", "do", "else", "end",
-    "except", "false", "fetch", "for", "foreign", "from", "grant", "group",
-    "having", "in", "initially", "intersect", "into", "leading", "limit",
-    "localtime", "localtimestamp", "new", "not", "null", "off", "offset",
-    "old", "on", "only", "or", "order", "placing", "primary", "references",
-    "returning", "select", "session_user", "some", "symmetric", "table",
-    "then", "to", "trailing", "true", "union", "unique", "user", "using",
-    "variadic", "when", "where", "window", "with", "authorization",
-    "between", "binary", "cross", "current_schema", "freeze", "full",
-    "ilike", "inner", "is", "isnull", "join", "left", "like", "natural",
-    "notnull", "outer", "over", "overlaps", "right", "similar", "verbose"
+    [
+        # sql92 reserved keywords
+        "add", "all", "allocate", "alter", "and", "any", "are", "as", "at",
+        "authorization", "avg", "begin", "between", "bit", "both", "by",
+        "cascaded", "case", "cast", "char", "character_length", "char_length",
+        "check", "close", "collate", "column", "commit", "connect",
+        "connection", "constraint", "continue", "convert", "corresponding",
+        "create", "cross", "current", "current_date", "current_time",
+        "current_timestamp", "current_user", "cursor", "deallocate", "dec",
+        "decimal", "declare", "_default", "delete", "describe", "disconnect",
+        "distinct", "double", "drop", "else", "end", "endexec", "escape",
+        "except", "exec", "execute", "exists", "external", "false", "fetch",
+        "float", "for", "foreign", "from", "full", "function", "get",
+        "get_current_connection", "global", "grant", "group", "group_concat",
+        "having", "hour", "identity", "immediate", "in", "index", "indicator",
+        "inner", "inout", "input", "insensitive", "insert", "int", "integer",
+        "intersect", "interval", "into", "is", "join", "leading", "left",
+        "like", "limit", "lower", "match", "max", "min", "minute", "national",
+        "natural", "nchar", "nvarchar", "next", "no", "none", "not", "null",
+        "nullif", "numeric", "octet_length", "of", "on", "only", "open", "or",
+        "order", "out", "outer", "output", "overlaps", "partition", "prepare",
+        "primary", "procedure", "public", "real", "references", "restrict",
+        "returning", "revoke", "right", "rollback", "rows", "schema", "scroll",
+        "second", "select", "session_user", "set", "smallint", "some", "sql",
+        "sqlcode", "sqlerror", "sqlstate", "sql_cache", "sql_no_cache",
+        "straight_join", "substring", "sum", "system_user", "table",
+        "timezone_hour", "timezone_minute", "to", "trailing", "translate",
+        "translation", "true", "union", "unique", "unknown", "update", "upper",
+        "user", "using", "values", "varchar", "varying", "whenever", "where",
+        "with", "year"
+        # non-sql92 reserved keywords
+        "boolean", "call", "current_role", "current_schema", "explain",
+        "grouping", "ltrim", "rtrim", "trim", "substr", "xml", "xmlparse",
+        "xmlserialize", "xmlexists", "xmlquery", "z_order_lat_lon"
     ])
 
 _DECIMAL_TYPES = (1231, 1700)
@@ -41,6 +60,12 @@ _INT_TYPES = (20, 21, 23, 26, 1005, 1007, 1016)
 class DOUBLE(sqltypes.Float):
     __visit_name__ = 'DOUBLE'
 
+class TEXT(sqltypes.Text):
+    """FoundationDB TEXT type. Always has a length of 65535"""
+    __visit_name__ = 'TEXT'
+
+    def __init__(self, length=None, **kw):
+        super(TEXT, self).__init__(length=None, **kw)
 
 class NestedResult(sqltypes.TypeEngine):
     """A SQLAlchemy type representing a 'nested result set' delivered as a
@@ -101,8 +126,10 @@ colspecs = {
 
 ischema_names = {
     "BIGINT": BIGINT,
+    "BLOB": BLOB,
     "CHAR": CHAR,
     "DATETIME": DATETIME,
+    "DATE": DATE,
     "DOUBLE": DOUBLE,
     "INT": INTEGER,
     "DECIMAL": DECIMAL,
@@ -131,12 +158,12 @@ class FDBCompiler(compiler.SQLCompiler):
     def _foundationdb_nested(self):
         return {}
 
-    def limit_clause(self, select):
+    def limit_clause(self, select, **kwargs):
         text = ""
         if select._limit is not None:
-            text += " \n LIMIT " + self.process(sql.literal(select._limit))
+            text += " \n LIMIT " + self.process(sql.literal(select._limit), **kwargs)
         if select._offset is not None:
-            text += " OFFSET " + self.process(sql.literal(select._offset))
+            text += " OFFSET " + self.process(sql.literal(select._offset), **kwargs)
             if select._limit is None:
                 text += " ROWS"  # OFFSET n ROW[S]
         return text
@@ -153,6 +180,8 @@ class FDBCompiler(compiler.SQLCompiler):
 
         return 'RETURNING ' + ', '.join(columns)
 
+    def for_update_clause(self, select, **kw):
+        return ""
 
 class FDBDDLCompiler(compiler.DDLCompiler):
     def get_column_specification(self, column, **kwargs):
@@ -197,9 +226,9 @@ class FDBDDLCompiler(compiler.DDLCompiler):
             ', '.join(preparer.quote(f.column.name)
                       for f in constraint._elements.values())
         )
-        #text += self.define_constraint_match(constraint)
-        #text += self.define_constraint_cascades(constraint)
-        #text += self.define_constraint_deferrability(constraint)
+        text += self.define_constraint_match(constraint)
+        text += self.define_constraint_cascades(constraint)
+        text += self.define_constraint_deferrability(constraint)
         return text
 
     def visit_create_sequence(self, create):
@@ -225,6 +254,14 @@ class FDBTypeCompiler(compiler.GenericTypeCompiler):
     def visit_DOUBLE(self, type_):
         return "DOUBLE"
 
+    def visit_VARCHAR(self, type_):
+        if type_.length:
+            return super(FDBTypeCompiler, self).visit_VARCHAR(type_)
+        else:
+            raise exc.CompileError(
+                "VARCHAR requires a length on dialect %s" %
+                self.dialect.name)
+
 class FDBIdentifierPreparer(compiler.IdentifierPreparer):
 
     reserved_words = RESERVED_WORDS
@@ -237,7 +274,7 @@ class FDBInspector(reflection.Inspector):
 
 class FDBExecutionContext(default.DefaultExecutionContext):
     def get_result_processor(self, type_, colname, coltype):
-        if self.compiled and type_ in self.compiled._foundationdb_nested:
+        if self.compiled and hasattr(self.compiled, '_foundationdb_nested') and type_ in self.compiled._foundationdb_nested:
             class NestedContext(object):
                 result_map = self.compiled._foundationdb_nested[type_]
                 dialect = self.dialect
@@ -328,9 +365,6 @@ class FDBDialect(default.DefaultDialect):
     execution_ctx_cls = FDBExecutionContext
     inspector = FDBInspector
     isolation_level = None
-
-    supports_empty_insert = False
-    supports_default_values = False
 
     dbapi_type_map = {
         NESTED_CURSOR: NestedResult()
@@ -453,7 +487,7 @@ class FDBDialect(default.DefaultDialect):
             scale, default, is_ident, ident_start, ident_increment in connection.execute(stmt):
 
             try:
-                coltype = ischema_names[type_]
+                coltype = self.ischema_names[type_]
             except KeyError:
                 util.warn("Did not recognize type '%s' of column '%s'" %
                       (type_, cname))
@@ -533,12 +567,10 @@ class FDBDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
-        schema = schema or self.default_schema_name
-
         fks = {}
         for grouping in False, True:
             stmt = text("SELECT rc.constraint_name, rfnced.table_schema, "
-                            "rfnced.table_name "
+                            "rfnced.table_name %s"
                     "FROM information_schema.table_constraints AS tc "
                     "JOIN information_schema.%s AS rc "
                         "ON tc.constraint_name=rc.constraint_name "
@@ -548,26 +580,29 @@ class FDBDialect(default.DefaultDialect):
                     "rc.unique_constraint_name=rfnced.constraint_name "
                     "WHERE tc.table_schema=:schema AND tc.table_name=:table "
                     % (
+                            ", rc.match_option, rc.update_rule, rc.delete_rule "
+                                if not grouping else ", NULL, NULL, NULL ",
                             "referential_constraints"
                                 if not grouping else "grouping_constraints",
                             "constraint_"
                                 if not grouping else "",
                         )
-                ).bindparams(schema=schema, table=table_name)
+                ).bindparams(schema=schema or self.default_schema_name, table=table_name)
 
-            for conname, referred_schema, referred_table in connection.execute(stmt):
+            for conname, referred_schema, referred_table, match, onupdate, ondelete in connection.execute(stmt):
                 fks[conname] = {
                     'name': conname,
                     'constrained_columns': [],
                     'referred_schema': referred_schema
                                     if referred_schema != self.default_schema_name
-                                    else None,
+                                    else schema,
                     'referred_table': referred_table,
                     'referred_columns': [],
                     'options': {
-                        'grouping': grouping
-                        #'onupdate': onupdate,
-                        #'ondelete': ondelete,
+                        'foundationdb_grouping': grouping,
+                        'match': match,
+                        'onupdate': onupdate,
+                        'ondelete': ondelete,
                     }
                 }
 
@@ -591,14 +626,13 @@ class FDBDialect(default.DefaultDialect):
                             "constraint_"
                                 if not grouping else "",
                         )
-                    ).bindparams(schema=schema, table=table_name)
+                    ).bindparams(schema=schema or self.default_schema_name, table=table_name)
 
 
             for cname, lclname, rmtname in connection.execute(stmt):
                 fk = fks[cname]
                 fk['constrained_columns'].append(lclname)
                 fk['referred_columns'].append(rmtname)
-
         return list(fks.values())
 
     @reflection.cache

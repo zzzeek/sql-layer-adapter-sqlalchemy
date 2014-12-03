@@ -1,46 +1,227 @@
+from sqlalchemy import util
+import sys
 from sqlalchemy.testing.requirements import SuiteRequirements
 
 from sqlalchemy.testing import exclusions
 from sqlalchemy.testing.exclusions import \
-    skip_if, \
-    SpecPredicate
-
+     skip, \
+     skip_if,\
+     only_if,\
+     only_on,\
+     fails_on_everything_except,\
+     fails_on,\
+     fails_if,\
+     succeeds_if,\
+     SpecPredicate,\
+     against,\
+     LambdaPredicate
 
 def exclude(db, op, spec, description=None):
     return SpecPredicate(db, op, spec, description=description)
 
+def no_support(db, reason):
+    return SpecPredicate(db, description=reason)
+
 class Requirements(SuiteRequirements):
     @property
-    def foreign_key_ddl(self):
+    def deferrable_or_no_constraints(self):
+        """Target database must support derferable constraints."""
+
         return exclusions.open()
 
     @property
-    def self_referential_foreign_keys(self):
+    def check_constraints(self):
+        """Target database must support check constraints."""
+
+        return exclusions.closed()
+
+    @property
+    def named_constraints(self):
+        """target database must support names for constraints."""
+
         return exclusions.open()
 
     @property
-    def table_reflection(self):
+    def foreign_keys(self):
+        """Target database must support foreign keys."""
+
         return exclusions.open()
 
     @property
-    def unique_constraint_reflection(self):
+    def on_update_cascade(self):
+        """target database must support ON UPDATE..CASCADE behavior in
+        foreign keys."""
+
         return exclusions.open()
 
     @property
-    def views(self):
+    def non_updating_cascade(self):
+        """target database must *not* support ON UPDATE..CASCADE behavior in
+        foreign keys."""
+        return fails_on('foundationdb+psycopg2')
+
+    @property
+    def deferrable_fks(self):
+        """target database must support deferrable fks"""
+        # OK, this is kind of weird, on the main branch it says only open for oracle
+        # and test_naturalpks breaks if you have on_update_cascade and deferrable_fks
+        # enabled, because of the _backend_specific_fk_args method
+        return exclusions.closed()
+
+
+    @property
+    def unbounded_varchar(self):
+        """Target database must support VARCHAR with no length"""
+
+        return exclusions.closed()
+
+    @property
+    def boolean_col_expressions(self):
+        """Target database must support boolean expressions as columns"""
         return exclusions.open()
 
     @property
-    def view_column_reflection(self):
+    def standalone_binds(self):
+        """target database/driver supports bound parameters as column expressions
+        without being in the context of a typed column.
+
+        """
         return exclusions.open()
 
     @property
-    def view_reflection(self):
+    def identity(self):
+        """Target database must support GENERATED AS IDENTITY or a facsimile.
+
+        Includes GENERATED AS IDENTITY, AUTOINCREMENT, AUTO_INCREMENT, or other
+        column DDL feature that fills in a DB-generated identifier at INSERT-time
+        without requiring pre-execution of a SEQUENCE or other artifact.
+
+        """
         return exclusions.open()
 
     @property
-    def schema_reflection(self):
+    def temp_table_reflection(self):
+        return self.temporary_table
+
+    @property
+    def temp_table_names(self):
+        """target dialect supports listing of temporary table names"""
+        return self.temporary_table
+
+    @property
+    def temporary_table(self):
+        """Target database must support CREATE TEMPORARY TABLE"""
+        return exclusions.closed()
+
+    @property
+    def reflectable_autoincrement(self):
+        """Target database must support tables that can automatically generate
+        PKs assuming they were reflected.
+
+        this is essentially all the DBs in "identity" plus Postgresql, which
+        has SERIAL support.  FB and Oracle (and sybase?) require the Sequence to
+        be explicitly added, including if the table was reflected.
+        """
         return exclusions.open()
+
+    @property
+    def insert_from_select(self):
+        return exclusions.open()
+
+    @property
+    def fetch_rows_post_commit(self):
+        return exclusions.open()
+
+    @property
+    def binary_comparisons(self):
+        """target database/driver can allow BLOB/BINARY fields to be compared
+        against a bound parameter value.
+        """
+        return exclusions.open()
+
+    @property
+    def binary_literals(self):
+        """target backend supports simple binary literals, e.g. an
+        expression like::
+
+            SELECT CAST('foo' AS BINARY)
+
+        Where ``BINARY`` is the type emitted from :class:`.LargeBinary`,
+        e.g. it could be ``BLOB`` or similar.
+
+        Basically fails on Oracle.
+
+        """
+
+        return exclusions.open()
+
+    @property
+    def independent_cursors(self):
+        """Target must support simultaneous, independent database cursors
+        on a single connection."""
+
+        return exclusions.open()
+
+    @property
+    def independent_connections(self):
+        """Target must support simultaneous, independent database connections."""
+
+        # This is also true of some configurations of UnixODBC and probably win32
+        # ODBC as well.
+        return exclusions.open()
+
+    @property
+    def updateable_autoincrement_pks(self):
+        """Target must support UPDATE on autoincrement/integer primary key."""
+
+        return exclusions.open()
+
+    @property
+    def isolation_level(self):
+        return exclusions.closed()
+
+    @property
+    def row_triggers(self):
+        """Target must support standard statement-running EACH ROW triggers."""
+
+        return exclusions.closed()
+
+    @property
+    def correlated_outer_joins(self):
+        """Target must support an outer join to a subquery which
+        correlates to the parent."""
+
+        return exclusions.open()
+
+    @property
+    def update_from(self):
+        """Target must support UPDATE..FROM syntax"""
+
+        return exclusions.closed()
+
+
+    @property
+    def update_where_target_in_subquery(self):
+        """Target must support UPDATE where the same table is present in a
+        subquery in the WHERE clause.
+
+        This is an ANSI-standard syntax that apparently MySQL can't handle,
+        such as:
+
+        UPDATE documents SET flag=1 WHERE documents.title IN
+            (SELECT max(documents.title) AS title
+                FROM documents GROUP BY documents.user_id
+            )
+        """
+        return exclusions.open()
+
+    @property
+    def savepoints(self):
+        """Target database must support savepoints."""
+
+        return exclusions.closed()
+
+
 
     @property
     def schemas(self):
@@ -50,34 +231,66 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
-    def reflects_pk_names(self):
-        return skip_if([
-            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
-        ])
+    def cross_schema_fk_reflection(self):
+        """target system must support reflection of inter-schema foreign keys
+        """
+        return exclusions.closed()
 
     @property
-    def primary_key_constraint_reflection(self):
-        return skip_if([
-            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
-        ])
+    def update_nowait(self):
+        """Target database must support SELECT...FOR UPDATE NOWAIT"""
+        return exclusions.closed()
 
     @property
-    def foreign_key_constraint_reflection(self):
+    def subqueries(self):
+        """Target database must support subqueries."""
+
         return exclusions.open()
 
     @property
-    def index_reflection(self):
+    def mod_operator_as_percent_sign(self):
+        """target database must use a plain percent '%' as the 'modulus'
+        operator."""
+
         return exclusions.open()
 
     @property
-    def returning(self):
+    def intersect(self):
+        """Target database must support INTERSECT or equivalent."""
+
         return exclusions.open()
 
+    @property
+    def except_(self):
+        """Target database must support EXCEPT or equivalent (i.e. MINUS)."""
+        return exclusions.open()
 
     @property
-    def text_type(self):
-        """Target database must support an unbounded Text() "
-        "type such as TEXT or CLOB"""
+    def offset(self):
+        """Target database must support some method of adding OFFSET or
+        equivalent to a result set."""
+        return exclusions.open()
+
+    @property
+    def window_functions(self):
+        return exclusions.closed()
+
+    @property
+    def two_phase_transactions(self):
+        """Target database must support two-phase transactions."""
+
+        return exclusions.closed()
+
+    @property
+    def views(self):
+        """Target database must support VIEWs."""
+
+        return exclusions.open()
+
+    @property
+    def empty_strings_varchar(self):
+        """target database can persist/return an empty string with a varchar."""
+
         return exclusions.open()
 
     @property
@@ -88,11 +301,69 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
-    def unbounded_varchar(self):
-        """Target database must support VARCHAR with no length"""
+    def unicode_data(self):
+        """target drive must support unicode data stored in columns."""
+        return exclusions.open()
 
-        # foundationdb doesn't seem to support this
-        return exclusions.closed()
+    @property
+    def unicode_connections(self):
+        """Target driver must support some encoding of Unicode across the wire."""
+        return exclusions.open()
+
+    @property
+    def unicode_ddl(self):
+        """Target driver must support some degree of non-ascii symbol names."""
+        return exclusions.open()
+
+    @property
+    def sane_rowcount(self):
+        return skip_if(
+            lambda config: not config.db.dialect.supports_sane_rowcount,
+            "driver doesn't support 'sane' rowcount"
+        )
+
+
+    @property
+    def emulated_lastrowid(self):
+        """"target dialect retrieves cursor.lastrowid or an equivalent
+        after an insert() construct executes."""
+        return exclusions.open()
+
+    @property
+    def implements_get_lastrowid(self):
+        return exclusions.open()
+
+    @property
+    def dbapi_lastrowid(self):
+        """"target backend includes a 'lastrowid' accessor on the DBAPI
+        cursor object."""
+        return fails_on('foundationdb+psycopg2')
+
+    @property
+    def sane_multi_rowcount(self):
+        return fails_if(
+            lambda config: not config.db.dialect.supports_sane_multi_rowcount,
+            "driver %(driver)s %(doesnt_support)s 'sane' multi row count"
+        )
+
+    @property
+    def nullsordering(self):
+        """Target backends that support nulls ordering."""
+        return fails_on('foundationdb+psycopg2')
+
+    @property
+    def reflects_pk_names(self):
+        return skip_if([
+            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
+        ])
+
+    @property
+    def datetime_literals(self):
+        """target dialect supports rendering of a date, time, or datetime as a
+        literal string, e.g. via the TypeEngine.literal_processor() method.
+
+        """
+        return fails_on('foundationdb+psycopg2')
 
     @property
     def datetime(self):
@@ -123,6 +394,13 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
+    def date_coerces_from_datetime(self):
+        """target dialect accepts a datetime object as the target
+        of a date column."""
+
+        return exclusions.open()
+
+    @property
     def date_historic(self):
         """target dialect supports representation of Python
         datetime.datetime() objects with historic (pre 1900) values."""
@@ -144,9 +422,221 @@ class Requirements(SuiteRequirements):
         return exclusions.closed()
 
     @property
+    def precision_numerics_general(self):
+        """target backend has general support for moderately high-precision
+        numerics."""
+        return exclusions.open()
+
+    @property
+    def precision_numerics_enotation_small(self):
+        """target backend supports Decimal() objects using E notation
+        to represent very small values."""
+        # NOTE: this exclusion isn't used in current tests.
+        return exclusions.open()
+
+    @property
+    def precision_numerics_enotation_large(self):
+        """target backend supports Decimal() objects using E notation
+        to represent very large values."""
+
+        return exclusions.open()
+
+
+    @property
     def precision_numerics_many_significant_digits(self):
+        """target backend supports values with many digits on both sides,
+        such as 319438950232418390.273596, 87673.594069654243
+
+        """
         # foundationdb only allows precision up to 31 digits
         return exclusions.closed()
+
+    @property
+    def precision_numerics_retains_significant_digits(self):
+        """A precision numeric type will return empty significant digits,
+        i.e. a value such as 10.000 will come back in Decimal form with
+        the .000 maintained."""
+
+        return exclusions.open()
+
+    @property
+    def precision_generic_float_type(self):
+        """target backend will return native floating point numbers with at
+        least seven decimal places when using the generic Float type."""
+
+        return exclusions.open()
+
+    @property
+    def floats_to_four_decimals(self):
+        return exclusions.open()
+
+    @property
+    def fetch_null_from_numeric(self):
+        return exclusions.open()
+
+    @property
+    def python2(self):
+        return skip_if(
+                lambda: sys.version_info >= (3,),
+                "Python version 2.xx is required."
+                )
+
+    @property
+    def python3(self):
+        return skip_if(
+                lambda: sys.version_info < (3,),
+                "Python version 3.xx is required."
+                )
+
+    @property
+    def cpython(self):
+        return only_if(lambda: util.cpython,
+               "cPython interpreter needed"
+             )
+
+
+    @property
+    def non_broken_pickle(self):
+        from sqlalchemy.util import pickle
+        return only_if(
+            lambda: not util.pypy and pickle.__name__ == 'cPickle'
+                or sys.version_info >= (3, 2),
+            "Needs cPickle+cPython or newer Python 3 pickle"
+        )
+
+
+    @property
+    def predictable_gc(self):
+        """target platform must remove all cycles unconditionally when
+        gc.collect() is called, as well as clean out unreferenced subclasses.
+
+        """
+        return self.cpython
+
+    @property
+    def hstore(self):
+        def check_hstore(config):
+            if not against(config, "postgresql"):
+                return False
+            try:
+                config.db.execute("SELECT 'a=>1,a=>2'::hstore;")
+                return True
+            except:
+                return False
+
+        return only_if(check_hstore)
+
+    @property
+    def range_types(self):
+        def check_range_types(config):
+            if not against(config, "postgresql+psycopg2"):
+                return False
+            try:
+                config.db.execute("select '[1,2)'::int4range;")
+                # only supported in psycopg 2.5+
+                from psycopg2.extras import NumericRange
+                return True
+            except:
+                return False
+
+        return only_if(check_range_types)
+
+
+    @property
+    def oracle_test_dblink(self):
+        return skip_if(
+                    lambda config: not config.file_config.has_option(
+                        'sqla_testing', 'oracle_db_link'),
+                    "oracle_db_link option not specified in config"
+                )
+
+    @property
+    def percent_schema_names(self):
+        return exclusions.closed()
+
+    @property
+    def order_by_label_with_expression(self):
+        return exclusions.closed()
+
+    @property
+    def skip_mysql_on_windows(self):
+        """Catchall for a large variety of MySQL on Windows failures"""
+
+        return skip_if(self._has_mysql_on_windows,
+                "Not supported on MySQL + Windows"
+            )
+
+
+    @property
+    def selectone(self):
+        """target driver must support the literal statement 'select 1'"""
+        return exclusions.open()
+
+
+    @property
+    def mysql_fully_case_sensitive(self):
+        return only_if(self._has_mysql_fully_case_sensitive)
+
+    def _has_mysql_on_windows(self, config):
+        return against(config, 'mysql') and \
+                config.db.dialect._detect_casing(config.db) == 1
+
+    def _has_mysql_fully_case_sensitive(self, config):
+        return against(config, 'mysql') and \
+                config.db.dialect._detect_casing(config.db) == 0
+
+    @property
+    def foreign_key_ddl(self):
+        return exclusions.open()
+
+    @property
+    def self_referential_foreign_keys(self):
+        return exclusions.open()
+
+    @property
+    def table_reflection(self):
+        return exclusions.open()
+
+    @property
+    def unique_constraint_reflection(self):
+        return exclusions.open()
+
+    @property
+    def view_column_reflection(self):
+        return exclusions.open()
+
+    @property
+    def view_reflection(self):
+        return exclusions.open()
+
+    @property
+    def schema_reflection(self):
+        return exclusions.open()
+
+    @property
+    def primary_key_constraint_reflection(self):
+        return skip_if([
+            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
+        ])
+
+    @property
+    def foreign_key_constraint_reflection(self):
+        return exclusions.open()
+
+    @property
+    def index_reflection(self):
+        return exclusions.open()
+
+    @property
+    def returning(self):
+        return exclusions.open()
+
+
+    @property
+    def text_type(self):
+        """Target database must support an unbounded Text() "
+        "type such as TEXT or CLOB"""
+        return exclusions.open()
 
     @property
     def duplicate_names_in_cursor_description(self):
@@ -155,5 +645,9 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
-    def percent_schema_names(self):
+    def bound_limit_offset(self):
+        """target database can render LIMIT and/or OFFSET using a bound
+        parameter
+        """
+
         return exclusions.closed()

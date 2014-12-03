@@ -65,3 +65,36 @@ class FDBPsycopg2Dialect(FDBDialect):
         opts.update(url.query)
         opts['connection_factory'] = fdb_psycopg2.Connection
         return ([], opts)
+
+    def is_disconnect(self, e, connection, cursor):
+        if isinstance(e, self.dbapi.Error):
+            # check the "closed" flag.  this might not be
+            # present on old psycopg2 versions
+            if getattr(connection, 'closed', False):
+                return True
+
+            # legacy checks based on strings.  the "closed" check
+            # above most likely obviates the need for any of these.
+            str_e = str(e).partition("\n")[0]
+            for msg in [
+                # these error messages from libpq: interfaces/libpq/fe-misc.c
+                # and interfaces/libpq/fe-secure.c.
+                'terminating connection',
+                'closed the connection',
+                'connection not open',
+                'could not receive data from server',
+                'could not send data to server',
+                # psycopg2 client errors, psycopg2/conenction.h,
+                # psycopg2/cursor.h
+                'connection already closed',
+                'cursor already closed',
+                # not sure where this path is originally from, it may
+                # be obsolete.   It really says "losed", not "closed".
+                'losed the connection unexpectedly',
+                # this can occur in newer SSL
+                'connection has been closed unexpectedly'
+            ]:
+                idx = str_e.find(msg)
+                if idx >= 0 and '"' not in str_e[:idx]:
+                    return True
+        return False
