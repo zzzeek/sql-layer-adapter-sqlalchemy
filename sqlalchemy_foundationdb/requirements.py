@@ -237,10 +237,6 @@ class Requirements(SuiteRequirements):
         return exclusions.closed()
 
     @property
-    def unique_constraint_reflection(self):
-        return fails_on('foundationdb+psycopg2')
-
-    @property
     def update_nowait(self):
         """Target database must support SELECT...FOR UPDATE NOWAIT"""
         return exclusions.closed()
@@ -357,8 +353,9 @@ class Requirements(SuiteRequirements):
 
     @property
     def reflects_pk_names(self):
-        """Target driver reflects the name of primary key constraints."""
-        return fails_on('foundationdb+psycopg2')
+        return skip_if([
+            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
+        ])
 
     @property
     def datetime_literals(self):
@@ -380,7 +377,7 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.datetime() with microsecond objects."""
 
-        return exclusions.open()
+        return exclusions.closed()
 
     @property
     def datetime_historic(self):
@@ -422,8 +419,7 @@ class Requirements(SuiteRequirements):
         """target dialect supports representation of Python
         datetime.time() with microsecond objects."""
 
-        return exclusions.open()
-
+        return exclusions.closed()
 
     @property
     def precision_numerics_general(self):
@@ -445,13 +441,15 @@ class Requirements(SuiteRequirements):
 
         return exclusions.open()
 
+
     @property
     def precision_numerics_many_significant_digits(self):
         """target backend supports values with many digits on both sides,
         such as 319438950232418390.273596, 87673.594069654243
 
         """
-        return exclusions.open()
+        # foundationdb only allows precision up to 31 digits
+        return exclusions.closed()
 
     @property
     def precision_numerics_retains_significant_digits(self):
@@ -554,7 +552,7 @@ class Requirements(SuiteRequirements):
 
     @property
     def percent_schema_names(self):
-        return exclusions.open()
+        return exclusions.closed()
 
     @property
     def order_by_label_with_expression(self):
@@ -604,10 +602,6 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
-    def views(self):
-        return exclusions.open()
-
-    @property
     def view_column_reflection(self):
         return exclusions.open()
 
@@ -618,19 +612,6 @@ class Requirements(SuiteRequirements):
     @property
     def schema_reflection(self):
         return exclusions.open()
-
-    @property
-    def schemas(self):
-        """Target database must support external schemas, and have one
-        named 'test_schema'."""
-
-        return exclusions.open()
-
-    @property
-    def reflects_pk_names(self):
-        return skip_if([
-            exclude('foundationdb', '<=', (1,9,5), 'primary key names not preserved'),
-        ])
 
     @property
     def primary_key_constraint_reflection(self):
@@ -658,82 +639,10 @@ class Requirements(SuiteRequirements):
         return exclusions.open()
 
     @property
-    def empty_strings_text(self):
-        """target database can persist/return an empty string with an
-        unbounded text."""
-
-        return exclusions.open()
-
-    @property
-    def unbounded_varchar(self):
-        """Target database must support VARCHAR with no length"""
-        return exclusions.closed()
-
-    @property
-    def datetime(self):
-        """target dialect supports representation of Python
-        datetime.datetime() objects."""
-
-        return exclusions.open()
-
-    @property
-    def datetime_microseconds(self):
-        """target dialect supports representation of Python
-        datetime.datetime() with microsecond objects."""
-
-        return exclusions.closed()
-
-    @property
-    def datetime_historic(self):
-        """target dialect supports representation of Python
-        datetime.datetime() objects with historic (pre 1900) values."""
-
-        return exclusions.open()
-
-    @property
-    def date(self):
-        """target dialect supports representation of Python
-        datetime.date() objects."""
-
-        return exclusions.open()
-
-    @property
-    def date_historic(self):
-        """target dialect supports representation of Python
-        datetime.datetime() objects with historic (pre 1900) values."""
-
-        return exclusions.open()
-
-    @property
-    def time(self):
-        """target dialect supports representation of Python
-        datetime.time() objects."""
-
-        return exclusions.open()
-
-    @property
-    def time_microseconds(self):
-        """target dialect supports representation of Python
-        datetime.time() with microsecond objects."""
-
-        return exclusions.closed()
-
-    @property
-    def precision_numerics_many_significant_digits(self):
-        # foundationdb only allows precision up to 31 digits
-        return exclusions.closed()
-
-    @property
     def duplicate_names_in_cursor_description(self):
         # for result sets that don't have nested=True (and none of the
         # SQLAlchemy suite tests do), we are OK with this.
         return exclusions.open()
-
-    @property
-    def percent_schema_names(self):
-        return exclusions.closed()
-
-
 
     @property
     def bound_limit_offset(self):
