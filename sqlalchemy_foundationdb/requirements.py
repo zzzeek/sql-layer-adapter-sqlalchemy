@@ -256,7 +256,7 @@ class Requirements(SuiteRequirements):
         """target database must use a plain percent '%' as the 'modulus'
         operator."""
 
-        return exclusions.closed()
+        return exclusions.open()
 
     @property
     def intersect(self):
