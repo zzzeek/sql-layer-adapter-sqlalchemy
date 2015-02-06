@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from pkg_resources import resource_string
 
-VERSION_STR = '0.9.4'
+VERSION_STR = '0.9.5'
 README_STR = resource_string(__name__, 'README.rst')
 
 setup(name='sqlalchemy-foundationdb',
