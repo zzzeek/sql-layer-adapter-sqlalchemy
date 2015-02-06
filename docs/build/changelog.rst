@@ -2,6 +2,15 @@
 Changelog
 ==========
 .. changelog::
+    :version: 0.9.4
+
+    .. change::
+      :tags: general
+
+      Add requirements for main SQLAlchemy test suite, fix problems
+      found when running full suite and add support for recent
+      SQL Layer features.
+
     :version: 0.9.3
 
     .. change::
