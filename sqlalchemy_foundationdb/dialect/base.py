@@ -8,6 +8,7 @@ from sqlalchemy import types as sqltypes, schema as sa_schema
 from foundationdb_sql.api import NESTED_CURSOR
 from sqlalchemy.ext.compiler import compiles
 import collections
+from .. import compat
 
 from sqlalchemy.types import INTEGER, BIGINT, SMALLINT, VARCHAR, \
         CHAR, FLOAT, NUMERIC, DATETIME, VARBINARY, \
@@ -141,16 +142,27 @@ ischema_names = {
 
 }
 
-@compiles(nested)
-def _visit_foundationdb_nested(nested, compiler, **kw):
-    saved_result_map = compiler.result_map
-    if hasattr(compiler, '_foundationdb_nested'):
-        compiler.result_map = compiler._foundationdb_nested[nested.type] = {}
-    try:
-        kw['force_result_map'] = True
-        return compiler.visit_grouping(nested, **kw)
-    finally:
-        compiler.result_map = saved_result_map
+
+if compat.sqla_10:
+    @compiles(nested)
+    def _visit_foundationdb_nested(nested, compiler, **kw):
+        with compiler._nested_result() as nested_result_structure:
+            compiler._foundationdb_nested[nested.type] = \
+                nested_result_structure
+            return compiler.visit_grouping(nested, **kw)
+else:
+    @compiles(nested)
+    def _visit_foundationdb_nested(nested, compiler, **kw):
+        saved_result_map = compiler.result_map
+        if hasattr(compiler, '_foundationdb_nested'):
+            compiler.result_map = \
+                compiler._foundationdb_nested[nested.type] = {}
+        try:
+            kw['force_result_map'] = True
+            return compiler.visit_grouping(nested, **kw)
+        finally:
+            compiler.result_map = saved_result_map
+
 
 class FDBCompiler(compiler.SQLCompiler):
 
@@ -276,7 +288,12 @@ class FDBExecutionContext(default.DefaultExecutionContext):
     def get_result_processor(self, type_, colname, coltype):
         if self.compiled and hasattr(self.compiled, '_foundationdb_nested') and type_ in self.compiled._foundationdb_nested:
             class NestedContext(object):
-                result_map = self.compiled._foundationdb_nested[type_]
+                if compat.sqla_10:
+                    result_column_struct = \
+                        self.compiled._foundationdb_nested[type_]
+                else:
+                    result_map = self.compiled._foundationdb_nested[type_]
+                compiled = None
                 dialect = self.dialect
                 root_connection = self.root_connection
                 engine = self.engine
